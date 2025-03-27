@@ -39,17 +39,23 @@ public class TCPClient
 
         // Read in questions from file
         String currentDir = System.getProperty("user.dir"); // Based on current directory
-        System.out.println("Current directory: " + currentDir);
+        System.out.println("Current directory: " + currentDir + "\n");
 
-            // macOS version: 
-            questions = readQuestions(currentDir + "/Questions.txt"); 
+        // Uncomment based on OS:
 
-            // Windows version:
-            // questions = readQuestions(currentDir + "\\Questions.txt"); 
+            // macOS file paths: 
+                questions = readFile(currentDir + "/Questions.txt"); 
+                answers = readFile(currentDir + "/Answers.txt");
 
-            // DEBUG: Print out array of all questions 
+            // Windows file paths:
+                // questions = readFile(currentDir + "\\Questions.txt");
+                // answers = readFile(currentDir + "\\Answers.txt");
+
+
+            // DEBUG: Print out arrays of questions and answers
             for(int i = 0; i < questions.length; i++){
-                System.out.println(questions[i]);
+                System.out.println("Q" + (i+1) + ": " + questions[i]);
+                System.out.println("A: " + answers[i] + "\n");
             }
 
     	// Create a socket to communicate with server
@@ -185,41 +191,20 @@ public class TCPClient
 �       myChatClient.createWriteThread();*/
     }
 
-
-
-
-
-    // public static String[] readQuestions(String filePath){
-	// 	String[] lines = new String[20];
+    public static String[] readFile(String filePath){
+		String[] lines = new String[20];
 		
-	// 	try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-    //         String line;
-    //         int count = 0;
-    //         while ((line = reader.readLine()) != null && count < 20) {
-    //             lines[count] = line;
-    //             count++;
-    //         }
-    //     } catch (IOException e) {
-    //         System.out.println("An error occurred: " + e.getMessage());
-    //         System.out.println("Make sure the right version of current working directory is uncommented in constructor of TCPClient!");
-    //     }
-    //     return lines;
-	// }
-
-    public static String[] readQuestions(String filePath) {
-        List<String> lines = new ArrayList<>();  // Dynamically grows with the number of lines
-
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+		try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             String line;
-            while ((line = reader.readLine()) != null) {
-                lines.add(line);  // Store every line dynamically
+            int count = 0;
+            while ((line = reader.readLine()) != null && count < 20) {
+                lines[count] = line;
+                count++;
             }
         } catch (IOException e) {
             System.out.println("An error occurred: " + e.getMessage());
+            System.out.println("Make sure the right version of current working directory is uncommented in constructor of TCPClient!");
         }
-
-        return lines.toArray(new String[0]);  // Convert the list to a string array
-    }
-
-
+        return lines;
+	}
 }
