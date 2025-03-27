@@ -71,7 +71,9 @@ public class TCPClient
         // . Implement GUI here  .
         // . . . . . . . . . . . .
 
-        clientName = JOptionPane.showInputDialog("Welcome to EPIC Pokemon trivia.\n\nEnter username: ");
+        clientName = JOptionPane.showInputDialog(null, "<html><span style='font-size:20pt; font-weight:bold;'>Welcome to EPIC Pokemon trivia.</span><br><br>Enter username:</html>","",
+        JOptionPane.PLAIN_MESSAGE  // This constant removes the default icon
+    );
 
     }
 
