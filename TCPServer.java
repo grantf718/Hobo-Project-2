@@ -2,13 +2,8 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-/**
- * 
- * @author cjaiswal
- *
- *  
- * 
- */
+
+
 public class TCPServer 
 {
     private ServerSocket serverSocket = null;
@@ -16,77 +11,80 @@ public class TCPServer
     private InputStream inStream = null;
     private OutputStream outStream = null;
 
-    public TCPServer() 
-    {
-    	//create a server listen socket at port 3339
-        try 
-        {
-			serverSocket = new ServerSocket(3339);
+    // ---------------------------------------- // 
+    //              Server Port:                //
+    // ---------------------------------------- // 
+    private final int SERVER_PORT = 1234;
+    // ---------------------------------------- // 
+
+
+    public TCPServer() {
+    	// Create server socket 
+        try {
+			serverSocket = new ServerSocket(SERVER_PORT);
+            System.out.println("\nServer created on port " + serverSocket.getLocalPort() + ".");
 		} 
-        catch (IOException e) 
-        {
-			// TODO Auto-generated catch block
+        catch (IOException e) {
 			e.printStackTrace();
 		}
     }
 
-    public void createSocket() 
-    {
-        try 
-        {
-            while (true) 
-            {
-            	//wait for a client to request to connect
+    // Accept client connections
+    public void listenForConnections() {
+        System.out.println("Listening for connections!");
+        try {
+            while (true) {
+                // Accept incoming connection from a client 
             	socket = serverSocket.accept();
-                
-            	//fetch the streams for the connected client	
+            	// Fetch the streams from the connected client	
                 inStream = socket.getInputStream();
                 outStream = socket.getOutputStream();
-                System.out.println("Connected");
+                System.out.println("Connected to client " + socket.getLocalSocketAddress());
                 createReadThread();
                 createWriteThread();
             }
         }
-        catch (IOException io) 
-        {
+        catch (IOException io) {
             io.printStackTrace();
         }
     }
-    
-    //Reading thread using anonymous class
-    public void createReadThread() 
-    {
-        Thread readThread = new Thread() 
-        {
-            public void run() 
-            {
-            	//check socket connectivity
-                while (socket.isConnected()) 
-                {
-                    try 
-                    {
+
+    // Creates and starts an anonymous thread that continuously monitors the input stream of an active socket connection.
+    public void createReadThread() {
+
+        // Capture the current socket and stream in local variables to be used only by each client's unique thread
+        final Socket clientSocket = socket;
+        final InputStream clientInStream = inStream;
+
+        Thread readThread = new Thread() {
+            public void run() {
+            	// Check socket connectivity before doing anything
+                while (socket.isConnected()) {
+                    try {
                         byte[] readBuffer = new byte[200];
-                        //read the data from client
-                        int num = inStream.read(readBuffer);
-                        if (num > 0) 
-                        {
+                        // Read the data from client
+                        int num = clientInStream.read(readBuffer);
+                        // Check if inStream is not empty before doing anything
+                        if (num > 0) {
                             byte[] arrayBytes = new byte[num];
                             System.arraycopy(readBuffer, 0, arrayBytes, 0, num);
                             String recvedMessage = new String(arrayBytes, "UTF-8");
-                            System.out.println("Received message :" + recvedMessage);
+                            // Print out received message
+                            System.out.println("Incoming from " + clientSocket.getInetAddress() + ": " + recvedMessage);
                         } 
-                        else
-                        {
-                            notifyAll();
+                        else {
+                            // Commented out notifyAll because it was giving exceptions 
+                            // notifyAll();
                         }
                     } 
-                    catch (SocketException se) 
-                    {
+                    catch (SocketException se) {
+                        System.out.println("SocketException: Client " + clientSocket.getInetAddress() + " disconnected.");
                         System.exit(0);
+
                     }
-                    catch (IOException i) 
-                    {
+                    catch (IOException i) {
                         i.printStackTrace();
+                        System.out.println("IOException while reading from " + clientSocket.getInetAddress() + ": " + i.getMessage());
                     }
                 }
             }
@@ -142,6 +140,6 @@ public class TCPServer
     public static void main(String[] args)
     {
         TCPServer chatServer = new TCPServer();
-        chatServer.createSocket();
+        chatServer.listenForConnections();
     }
 }

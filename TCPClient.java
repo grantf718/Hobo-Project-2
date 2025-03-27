@@ -2,36 +2,55 @@ import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-/**
- * 
- * @author cjaiswal
- *
- * 
- */
+
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+
+
 public class TCPClient 
 {
     private Socket socket = null;
     private InputStream inStream = null;
     private OutputStream outStream = null;
 
-    public TCPClient() 
-    {
-    	//create a socket to connect to localHost's (127.0.0.1) port 3339
-        try 
-        {
-			socket = new Socket("localHost", 3339);
-			System.out.println("Connected!");
+    private JFrame window;
+
+    // ---------------------------------------- // 
+    //            Destination Socket:           //
+    // ---------------------------------------- // 
+        
+        // Destination port: (must match server)
+        private final int DEST_PORT = 1234;
+
+        // Destination IP: (must match server)
+        private final String DEST_IP = "localhost"; // <-- localhost (for testing purposes)
+        // private final String DEST_IP = "10.111.134.82"; // <-- Grant's IP
+        // private final String DEST_IP = ""; // <-- Evan's IP
+        // private final String DEST_IP = ""; // <-- Jessica's IP
+
+    // ---------------------------------------- // 
+
+    public TCPClient() {
+    	// Create a socket to communicate with server
+        try {
+			socket = new Socket(DEST_IP, DEST_PORT);
+			System.out.println("Connected to server!");
 		} 
-        catch (UnknownHostException e) 
-        {
-			// TODO Auto-generated catch block
+        catch (UnknownHostException e) {
+			e.printStackTrace(); 
+            System.out.println("\nFAILED TO ESTABLISH A CONNECTION TO THE SERVER.\n\nCheck:\n 1. That the server is running\n 2. The destination socket configured in the client matches the socket of the server you're trying to reach.\n");
+        } 
+        catch (IOException e) {
 			e.printStackTrace();
-		} 
-        catch (IOException e) 
-        {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+            System.out.println("\nFAILED TO ESTABLISH A CONNECTION TO THE SERVER.\n\nCheck:\n 1. That the server is running\n 2. The destination socket configured in the client matches the socket of the server you're trying to reach.\n");
 		}
+
+        // . . . . . . . . . . . .
+        // . Implement GUI here  .
+        // . . . . . . . . . . . .
+
+        // JOptionPane.showMessageDialog(window, "This is a trivia game");
+
     }
 
     public void createSocket()
@@ -72,7 +91,7 @@ public class TCPClient
                             byte[] arrayBytes = new byte[num];
                             System.arraycopy(readBuffer, 0, arrayBytes, 0, num);
                             String recvedMessage = new String(arrayBytes, "UTF-8");
-                            System.out.println("Received message :" + recvedMessage);
+                            System.out.println("Received message: " + recvedMessage);
                         }
                         else 
                         {

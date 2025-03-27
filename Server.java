@@ -2,13 +2,13 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+
 /**
  * 
- * @author cjaiswal
- *
- *  
+ * @author 
  * 
  */
+
 public class Server 
 {
     private ServerSocket serverSocket = null;
@@ -25,7 +25,6 @@ public class Server
 		} 
         catch (IOException e) 
         {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
     }
