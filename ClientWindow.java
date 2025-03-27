@@ -40,18 +40,18 @@ public class ClientWindow implements ActionListener
 		 * Here we are making the destination socket
 		 * This will be used later to send information back and forth from the game server and the user playing the game
 		 */
-		try{
-			socket = new DatagramSocket();
+		// try{
+		// 	socket = new DatagramSocket();
 			
-			this.setDestIP(InetAddress.getByName("10.111.134.82"));
-			this.setDestPort(9876);
+		// 	this.setDestIP(InetAddress.getByName("10.111.134.82"));
+		// 	this.setDestPort(9876);
 
-			incomingData = new byte[1024];
-            userAnswer = "";
+		// 	incomingData = new byte[1024];
+        //     userAnswer = "";
 
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		// } catch (Exception e) {
+		// 	e.printStackTrace();
+		// }
 
 		JOptionPane.showMessageDialog(window, "This is a trivia game");
 		
