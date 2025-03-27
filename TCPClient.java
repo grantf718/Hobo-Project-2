@@ -2,12 +2,8 @@ import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
 
-import javax.swing.JFrame;
 import javax.swing.JOptionPane;
-
 
 public class TCPClient 
 {
@@ -17,8 +13,7 @@ public class TCPClient
 
     private String[] questions;
 	private String[] answers;
-
-    private JFrame window;
+    private String clientName = "UNNAMED_CLIENT";
 
     // ---------------------------------------- // 
     //            Destination Socket:           //
@@ -28,8 +23,8 @@ public class TCPClient
         private final int DEST_PORT = 1234;
 
         // Destination IP: (must match server)
-        private final String DEST_IP = "localhost"; // <-- localhost (for testing purposes)
-        // private final String DEST_IP = "10.111.134.82"; // <-- Grant's IP
+        // private final String DEST_IP = "localhost"; // <-- localhost (for testing purposes)
+        private final String DEST_IP = "10.111.134.82"; // <-- Grant's IP
         // private final String DEST_IP = ""; // <-- Evan's IP
         // private final String DEST_IP = ""; // <-- Jessica's IP
 
@@ -53,8 +48,8 @@ public class TCPClient
 
 
             // DEBUG: Print out arrays of questions and answers
-            for(int i = 0; i < questions.length; i++){
-                System.out.println("Q" + (i+1) + ": " + questions[i]);
+            for(int i = 0; i < questions.length; i++){ 
+                System.out.println("Q" + (i+1) + ": " + questions[i]); 
                 System.out.println("A: " + answers[i] + "\n");
             }
 
@@ -72,13 +67,11 @@ public class TCPClient
             System.out.println("\nFAILED TO ESTABLISH A CONNECTION TO THE SERVER.\n\nCheck:\n 1. That the server is running\n 2. The destination socket configured in the client matches the socket of the server you're trying to reach.\n");
 		}
 
-
-
         // . . . . . . . . . . . .
         // . Implement GUI here  .
         // . . . . . . . . . . . .
 
-        // JOptionPane.showMessageDialog(window, "This is a trivia game");
+        clientName = JOptionPane.showInputDialog("Welcome to EPIC Pokemon trivia.\n\nEnter username: ");
 
     }
 
