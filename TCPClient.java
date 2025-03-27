@@ -23,8 +23,8 @@ public class TCPClient
         private final int DEST_PORT = 1234;
 
         // Destination IP: (must match server)
-        private final String DEST_IP = "localhost"; // <-- localhost (for testing purposes)
-        // private final String DEST_IP = "10.111.134.82"; // <-- Grant's IP
+        // private final String DEST_IP = "localhost"; // <-- localhost (for testing purposes)
+        private final String DEST_IP = "10.111.134.82"; // <-- Grant's IP
         // private final String DEST_IP = ""; // <-- Evan's IP
         // private final String DEST_IP = ""; // <-- Jessica's IP
 
@@ -91,7 +91,7 @@ public class TCPClient
                             byte[] arrayBytes = new byte[num];
                             System.arraycopy(readBuffer, 0, arrayBytes, 0, num);
                             String recvedMessage = new String(arrayBytes, "UTF-8");
-                            System.out.println("Received message: " + recvedMessage);
+                            System.out.println("Incoming from server: " + recvedMessage);
                         }
                         else 
                         {
