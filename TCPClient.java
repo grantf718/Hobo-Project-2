@@ -2,6 +2,7 @@ import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.security.SecureRandom;
 
 import javax.swing.JOptionPane;
 
@@ -13,7 +14,7 @@ public class TCPClient
 
     private String[] questions;
 	private String[] answers;
-    private String clientName = "UNNAMED_CLIENT";
+    private String clientName;
 
     // ---------------------------------------- // 
     //            Destination Socket:           //
@@ -48,10 +49,10 @@ public class TCPClient
 
 
             // DEBUG: Print out arrays of questions and answers
-            for(int i = 0; i < questions.length; i++){ 
-                System.out.println("Q" + (i+1) + ": " + questions[i]); 
-                System.out.println("A: " + answers[i] + "\n");
-            }
+            // for(int i = 0; i < questions.length; i++){ 
+            //     System.out.println("Q" + (i+1) + ": " + questions[i]); 
+            //     System.out.println("A: " + answers[i] + "\n");
+            // }
 
     	// Create a socket to communicate with server
         try {
@@ -67,67 +68,61 @@ public class TCPClient
             System.out.println("\nFAILED TO ESTABLISH A CONNECTION TO THE SERVER.\n\nCheck:\n 1. That the server is running\n 2. The destination socket configured in the client matches the socket of the server you're trying to reach.\n");
 		}
 
+        // Enter username popup
+        clientName = JOptionPane.showInputDialog(null, "<html><span style='font-size:20pt; font-weight:bold;'>Welcome to EPIC Pokemon trivia.</span><br><br>Enter username to join:</html>","", JOptionPane.PLAIN_MESSAGE);
+        // If user submits a blank username, assign it one (Player XXXX)
+        if(clientName.isBlank()){
+            SecureRandom secureRand = new SecureRandom();
+            int r1 = secureRand.nextInt(10), r2 = secureRand.nextInt(10), r3 = secureRand.nextInt(10), r4 = secureRand.nextInt(10);
+            clientName = "Player " + r1 + r2 + r3 + r4;
+            System.out.println(clientName);
+        }
+
         // . . . . . . . . . . . .
         // . Implement GUI here  .
         // . . . . . . . . . . . .
 
-        clientName = JOptionPane.showInputDialog(null, "<html><span style='font-size:20pt; font-weight:bold;'>Welcome to EPIC Pokemon trivia.</span><br><br>Enter username:</html>","",
-        JOptionPane.PLAIN_MESSAGE  // This constant removes the default icon
-    );
-
     }
 
-    public void createSocket()
-    {
-        try 
-        {
-        	//fetch the streams
+    // Create client socket
+    public void createSocket() {
+        try {
+        	// Fetch streams
             inStream = socket.getInputStream();
             outStream = socket.getOutputStream();
             createReadThread();
             createWriteThread();
         } 
-        catch (UnknownHostException u) 
-        {
+        catch (UnknownHostException u) {
             u.printStackTrace();
         } 
-        catch (IOException io) 
-        {
+        catch (IOException io) {
             io.printStackTrace();
         }
     }
 
-    public void createReadThread() 
-    {
-        Thread readThread = new Thread() 
-        {
-            public void run() 
-            {
-                while (socket.isConnected()) 
-                {
-                    try 
-                    {
+    public void createReadThread() {
+        Thread readThread = new Thread() {
+            public void run() {
+                while (socket.isConnected()) {
+                    try {
                         byte[] readBuffer = new byte[200];
                         int num = inStream.read(readBuffer);
 
-                        if (num > 0) 
-                        {
+                        if (num > 0) {
                             byte[] arrayBytes = new byte[num];
                             System.arraycopy(readBuffer, 0, arrayBytes, 0, num);
                             String recvedMessage = new String(arrayBytes, "UTF-8");
                             System.out.println("Incoming from server: " + recvedMessage);
                         }
-                        else 
-                        {
+                        else {
                         	notifyAll();
                         }
                     }
-                    catch (SocketException se)
-                    {
+                    catch (SocketException se) {
                         System.exit(0);
                     }
-                    catch (IOException i) 
-                    {
+                    catch (IOException i) {
                         i.printStackTrace();
                     }
                 }
@@ -137,38 +132,28 @@ public class TCPClient
         readThread.start();
     }
 
-    public void createWriteThread() 
-    {
-        Thread writeThread = new Thread() 
-        {
-            public void run() 
-            {
-                while (socket.isConnected()) 
-                {
-                	try 
-                	{
+    public void createWriteThread() {
+        Thread writeThread = new Thread() {
+            public void run() {
+                while (socket.isConnected()) {
+                	try {
                         BufferedReader inputReader = new BufferedReader(new InputStreamReader(System.in));
                         sleep(100);
                         String typedMessage = inputReader.readLine();
-                        if (typedMessage != null && typedMessage.length() > 0) 
-                        {
-                            synchronized (socket) 
-                            {
+                        if (typedMessage != null && typedMessage.length() > 0) {
+                            synchronized (socket) {
                                 outStream.write(typedMessage.getBytes("UTF-8"));
                             }
                             sleep(100);
                         }
-                        else
-                        {
+                        else {
                         	notifyAll();
                         }
                     } 
-                	catch (IOException i) 
-                	{
+                	catch (IOException i) {
                         i.printStackTrace();
                     } 
-                	catch (InterruptedException ie) 
-                	{
+                	catch (InterruptedException ie) {
                         ie.printStackTrace();
                     }
                 }
@@ -178,14 +163,7 @@ public class TCPClient
         writeThread.start();
     }
 
-    public static void main(String[] args) throws Exception 
-    {
-        TCPClient myChatClient = new TCPClient();
-        myChatClient.createSocket();
-        /*myChatClient.createReadThread();
-�       myChatClient.createWriteThread();*/
-    }
-
+    // Function to read in a text file containing 20 questions or answers separated by line
     public static String[] readFile(String filePath){
 		String[] lines = new String[20];
 		
@@ -202,4 +180,10 @@ public class TCPClient
         }
         return lines;
 	}
+
+    public static void main(String[] args) throws Exception {
+        TCPClient myChatClient = new TCPClient();
+        myChatClient.createSocket();
+    }
+
 }
