@@ -14,7 +14,9 @@ public class TCPClient
 
     private String[] questions;
 	private String[] answers;
-    private String clientName;
+
+    private String clientUsername;
+    private boolean sentUsername = false;
 
     // ---------------------------------------- // 
     //            Destination Socket:           //
@@ -69,13 +71,13 @@ public class TCPClient
 		}
 
         // Enter username popup
-        clientName = JOptionPane.showInputDialog(null, "<html><span style='font-size:20pt; font-weight:bold;'>Welcome to EPIC Pokemon trivia.</span><br><br>Enter username to join:</html>","", JOptionPane.PLAIN_MESSAGE);
+        clientUsername = JOptionPane.showInputDialog(null, "<html><span style='font-size:20pt; font-weight:bold;'>Welcome to EPIC Pokemon trivia.</span><br><br>Enter username to join:</html>","", JOptionPane.PLAIN_MESSAGE);
         // If user submits a blank username, assign it one (Player XXXX)
-        if(clientName.isBlank()){
+        if(clientUsername.isBlank()){
             SecureRandom secureRand = new SecureRandom();
             int r1 = secureRand.nextInt(10), r2 = secureRand.nextInt(10), r3 = secureRand.nextInt(10), r4 = secureRand.nextInt(10);
-            clientName = "Player " + r1 + r2 + r3 + r4;
-            System.out.println(clientName);
+            clientUsername = "Player " + r1 + r2 + r3 + r4;
+            System.out.println("Auto-assigned username: " + clientUsername);
         }
 
         // . . . . . . . . . . . .
@@ -137,6 +139,19 @@ public class TCPClient
             public void run() {
                 while (socket.isConnected()) {
                 	try {
+
+                        // Send server the client's username
+                        if(!sentUsername){
+                            synchronized (socket) {
+                                clientUsername = "USER " + clientUsername; // Add USER tag so server can recognize it
+                                outStream.write(clientUsername.getBytes("UTF-8"));
+                            }
+                            sentUsername = true; // To make it only send once 
+                        }
+
+                        // THIS IS THE ORIGINAL CODE TO ACCEPT A TYPED LINE FROM TERMINAL, 
+                        // WHICH IS NOT NEEDED BUT CONTAINS THE CODE TO WRITE TO SERVER.
+                        // ------------------------------------------------------------
                         BufferedReader inputReader = new BufferedReader(new InputStreamReader(System.in));
                         sleep(100);
                         String typedMessage = inputReader.readLine();
@@ -149,6 +164,7 @@ public class TCPClient
                         else {
                         	notifyAll();
                         }
+
                     } 
                 	catch (IOException i) {
                         i.printStackTrace();

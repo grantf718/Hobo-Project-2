@@ -2,6 +2,7 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.HashMap;
 
 
 public class TCPServer 
@@ -10,6 +11,9 @@ public class TCPServer
     private Socket socket = null;
     private InputStream inStream = null;
     private OutputStream outStream = null;
+
+    // Map of client IPs and their usernames 
+    private HashMap<String, String> clientMap = new HashMap<>(); 
 
     // Boolean to represent if a client has buzzed in. Set to TRUE once any client buzzes in before the rest. 
     // Used to send "ack" vs "negative-ack". Will reset upon new question
@@ -43,7 +47,8 @@ public class TCPServer
             	// Fetch the streams from the connected client	
                 inStream = socket.getInputStream();
                 outStream = socket.getOutputStream();
-                System.out.println("Connected to client " + socket.getLocalSocketAddress());
+                // System.out.println("Connected to client " + socket.getInetAddress());
+                System.out.println("Client " + socket.getInetAddress() + " has connected");
                 createReadThread();
                 createWriteThread();
             }
@@ -62,6 +67,11 @@ public class TCPServer
 
         Thread readThread = new Thread() {
             public void run() {
+
+                // Store client's IP and username for easy access 
+                final String clientIP = clientSocket.getInetAddress().toString();
+                String clientUsername = "Unknown user"; // Default to unknown so the code doesnt flip out!
+
             	// Check socket connectivity before doing anything
                 while (socket.isConnected()) {
                     try {
@@ -72,42 +82,49 @@ public class TCPServer
                         if (num > 0) {
                             byte[] arrayBytes = new byte[num];
                             System.arraycopy(readBuffer, 0, arrayBytes, 0, num);
-                            String recievedMessage = new String(arrayBytes, "UTF-8");
-                            // Print out received message
-                            System.out.println("Incoming from " + clientSocket.getInetAddress() + ": " + recievedMessage);
+                            String receivedMessage = new String(arrayBytes, "UTF-8");
 
-                            // Determine if this client was the first to buzz
-                            if(!firstClient){
-                                // If it was, update firstClient to TRUE
-                                firstClient = !firstClient; 
+                            // Accept client username if it was sent over
+                            if(receivedMessage.startsWith("USER ")){
+                                clientUsername = receivedMessage.substring(5); // Remove the USER tag
+                                clientMap.put(clientIP,clientUsername);
+                                System.out.println("Set username " + clientUsername + " for " + clientIP);
 
-                                // Confirm connection again before responding 
-                                if(socket.isConnected()){
+                            // If it's not a username being sent over, process the message as normal
+                            } else {
+                                // Print out received message
+                                System.out.println("Incoming from " + clientUsername + " (" + clientIP + "): " + receivedMessage);
+
+                                // Determine if this client was the first to buzz
+                                if(!firstClient){
+                                    // If it was, update firstClient to TRUE
+                                    firstClient = !firstClient; 
+
                                     // Determine if the client's answer is correct
-                                    if(recievedMessage.equals("correct answer")){
+                                    if(receivedMessage.equals("correct answer")){
                                         // If correct, respond with "ack"
-                                        System.out.println("'" + recievedMessage + "' is correct. Sending 'ack' to " + clientSocket.getInetAddress() + ".");
+                                        System.out.println("'" + receivedMessage + "' is correct. Sending 'ack' to " + clientSocket.getInetAddress() + ".");
                                         synchronized (socket) {
                                             String response = "ack";
                                             outStream.write(response.getBytes("UTF-8"));
                                         }
                                     } else {
                                         // If incorrect, respond with "negative-ack"
-                                        System.out.println("'" + recievedMessage + "' is incorrect. Sending 'negative-ack' to " + clientSocket.getInetAddress() + ".");
+                                        System.out.println("'" + receivedMessage + "' is incorrect. Sending 'negative-ack' to " + clientSocket.getInetAddress() + ".");
                                         synchronized (socket) {
                                             String response = "negative-ack";
                                             outStream.write(response.getBytes("UTF-8"));
                                         }
 
                                     }
-                                } else {
-                                    System.out.println("Error while responding to client. The socket was not connected. They had the correct answer.");
-                                }
-
-                                
                             } else {
                                 System.out.println("Client " + clientSocket.getInetAddress() + " buzzed in too late.");
                             }
+
+
+                            }
+
+
                         } 
                         else {
                             // Commented out notifyAll because it was giving exceptions 
