@@ -12,9 +12,6 @@ public class TCPClient
     private InputStream inStream = null;
     private OutputStream outStream = null;
 
-    private String[] questions;
-	private String[] answers;
-
     private String clientUsername;
     private boolean sentUsername = false;
 
@@ -34,27 +31,6 @@ public class TCPClient
     // ---------------------------------------- // 
 
     public TCPClient() {
-
-        // Read in questions from file
-        String currentDir = System.getProperty("user.dir"); // Based on current directory
-        System.out.println("Current directory: " + currentDir + "\n");
-
-        // Uncomment based on OS:
-
-            // macOS file paths: 
-                questions = readFile(currentDir + "/Questions.txt"); 
-                answers = readFile(currentDir + "/Answers.txt");
-
-            // Windows file paths:
-                // questions = readFile(currentDir + "\\Questions.txt");
-                // answers = readFile(currentDir + "\\Answers.txt");
-
-
-            // DEBUG: Print out arrays of questions and answers
-            // for(int i = 0; i < questions.length; i++){ 
-            //     System.out.println("Q" + (i+1) + ": " + questions[i]); 
-            //     System.out.println("A: " + answers[i] + "\n");
-            // }
 
     	// Create a socket to communicate with server
         try {
@@ -178,24 +154,6 @@ public class TCPClient
         writeThread.setPriority(Thread.MAX_PRIORITY);
         writeThread.start();
     }
-
-    // Function to read in a text file containing 20 questions or answers separated by line
-    public static String[] readFile(String filePath){
-		String[] lines = new String[20];
-		
-		try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-            String line;
-            int count = 0;
-            while ((line = reader.readLine()) != null && count < 20) {
-                lines[count] = line;
-                count++;
-            }
-        } catch (IOException e) {
-            System.out.println("An error occurred: " + e.getMessage());
-            System.out.println("Make sure the right version of current working directory is uncommented in constructor of TCPClient!");
-        }
-        return lines;
-	}
 
     public static void main(String[] args) throws Exception {
         TCPClient myChatClient = new TCPClient();

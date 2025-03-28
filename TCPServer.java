@@ -12,6 +12,10 @@ public class TCPServer
     private InputStream inStream = null;
     private OutputStream outStream = null;
 
+    // Arrays to store questions and answers from file
+    private String[] questions;
+	private String[] answers;
+
     // Map of client IPs and their usernames 
     private HashMap<String, String> clientMap = new HashMap<>(); 
 
@@ -27,7 +31,28 @@ public class TCPServer
 
 
     public TCPServer() {
-    	// Create server socket 
+
+        // Read in questions from file
+        String currentDir = System.getProperty("user.dir"); // Based on current directory
+        System.out.println("Current directory: " + currentDir + "\n");
+
+        // Uncomment based on OS:
+
+            // macOS: 
+                questions = readFile(currentDir + "/Questions.txt"); 
+                answers = readFile(currentDir + "/Answers.txt");
+
+            // Windows:
+                // questions = readFile(currentDir + "\\Questions.txt");
+                // answers = readFile(currentDir + "\\Answers.txt");
+
+            // DEBUG: Print out arrays of questions and answers
+            // for(int i = 0; i < questions.length; i++){ 
+            //     System.out.println("Q" + (i+1) + ": " + questions[i]); 
+            //     System.out.println("A: " + answers[i] + "\n");
+            // }
+
+    	// Create server socket with assigned port
         try {
 			serverSocket = new ServerSocket(SERVER_PORT);
             System.out.println("\nServer created on port " + serverSocket.getLocalPort() + ".");
@@ -35,6 +60,7 @@ public class TCPServer
         catch (IOException e) {
 			e.printStackTrace();
 		}
+
     }
 
     // Accept client connections
@@ -191,6 +217,24 @@ public class TCPServer
         writeThread.start();
     }
 
+    // Function to read in a text file containing 20 questions or answers separated by line
+    public static String[] readFile(String filePath){
+        String[] lines = new String[20];
+        
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            int count = 0;
+            while ((line = reader.readLine()) != null && count < 20) {
+                lines[count] = line;
+                count++;
+            }
+        } catch (IOException e) {
+            System.out.println("An error occurred: " + e.getMessage());
+            System.out.println("Make sure the right version of current working directory is uncommented in constructor of TCPClient!");
+        }
+        return lines;
+    }
+    
     public static void main(String[] args)
     {
         TCPServer chatServer = new TCPServer();
