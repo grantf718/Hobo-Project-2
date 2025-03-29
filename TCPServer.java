@@ -17,7 +17,7 @@ public class TCPServer
 
     // Arrays to store questions and answers from file
     private String[] questions;
-	private String[] answers;
+	private String[][] answers;
     private int questionNum = 0;
 
     // Boolean to represent if a client has buzzed in. Set to TRUE once any client buzzes in before the rest. 
@@ -37,21 +37,22 @@ public class TCPServer
         String currentDir = System.getProperty("user.dir"); // Based on current directory
         System.out.println("Current directory: " + currentDir + "\n");
 
-        // Uncomment based on OS:
-
-            // macOS: 
-                questions = readFile(currentDir + "/Questions.txt"); 
-                answers = readFile(currentDir + "/Answers.txt");
-
+        // Automatically get directory syntax based on OS
+        String os = System.getProperty("os.name").toLowerCase();
+        if (os.contains("win")) {
             // Windows:
-                // questions = readFile(currentDir + "\\Questions.txt");
-                // answers = readFile(currentDir + "\\Answers.txt");
+            questions = readQuestions(currentDir + "\\Questions.txt");
+            answers = readAnswers(currentDir + "\\Answers.txt");
+        } else if (os.contains("mac")) {
+            // macOS:
+            questions = readQuestions(currentDir + "/Questions.txt"); 
+            answers = readAnswers(currentDir + "/Answers.txt");
+        } else {
+            System.out.println("OS not supported, Q&A files not read in.");
+        }
 
-            // DEBUG: Print out arrays of questions and answers
-            // for(int i = 0; i < questions.length; i++){ 
-            //     System.out.println("Q" + (i+1) + ": " + questions[i]); 
-            //     System.out.println("A: " + answers[i] + "\n");
-            // }
+        // DEBUG: Print out arrays of questions and answers
+        printQnAs();
 
     	// Create server socket with assigned port
         try {
@@ -259,7 +260,7 @@ public class TCPServer
     }
 
     // Function to read in a text file containing 20 questions or answers separated by line
-    public static String[] readFile(String filePath){
+    public static String[] readQuestions(String filePath){
         String[] lines = new String[20];
         
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
@@ -274,6 +275,40 @@ public class TCPServer
             System.out.println("Make sure the right version of current working directory is uncommented in constructor of TCPClient!");
         }
         return lines;
+    }
+
+    public static String[][] readAnswers(String filePath) {
+        String[][] lines = new String[20][];
+        
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            int count = 0;
+            while ((line = reader.readLine()) != null && count < 20) {
+                lines[count] = line.split(",\s*"); // Splitting by commas with optional spaces
+                count++;
+            }
+        } catch (IOException e) {
+            System.out.println("An error occurred: " + e.getMessage());
+            System.out.println("\n--> Make sure the right file path is uncommented in constructor of TCPClient! <--\n");
+        }
+        return lines;
+    }
+
+    // Debug function that prints all questions and answers to terminal 
+    public void printQnAs(){
+        for (int i = 0; i < questions.length; i++) {
+            System.out.println("Q" + (i + 1) + ": " + questions[i]);
+            System.out.print("A: ");
+            
+            // Print all the answers for the current question
+            for (int j = 0; j < answers[i].length; j++) {
+                System.out.print(answers[i][j]);
+                if (j < answers[i].length - 1) {
+                    System.out.print(", ");
+                }
+            }
+            System.out.println("\n");
+        }
     }
     
     public static void main(String[] args) {

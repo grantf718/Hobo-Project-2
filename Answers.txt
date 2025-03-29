@@ -14,7 +14,7 @@ Mewtwo, Ditto, Genesect, Porygon
 Thunder Stone, Moon Stone, Fire Stone, Leaf Stone
 Level 100, Level 99, Level 50, Level 255
 Ghost/Poison, Ghost, Poison, Dark
-Gengar and Nidorino (in the opening battle of Episode 1), Pikachu, Bulbasaur, Charmander
+Gengar & Nidorino, Pikachu, Bulbasaur, Charmander
 Team Magma, Team Aqua, Team Rocket, Team Galactic
 Thousand Arrows, Dragon Dance, Earthquake, Core Enforcer
 MissingNo., 'M, Glitchy, PokeGod
