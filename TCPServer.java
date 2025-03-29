@@ -64,7 +64,7 @@ public class TCPServer
 
     }
 
-    // Accept client connections (calls readThread and writeThread)
+    // Accept client connections
     public void listenForConnections() {
         System.out.println("Listening for connections!\n");
         try {
@@ -77,7 +77,7 @@ public class TCPServer
                 // Store output stream of client
                 clientOutputs.add(outStream); 
                 System.out.println("Client " + socket.getInetAddress() + " has connected");
-                // Create a new thread for client
+                // Create a new threads
                 createReadThread();
                 // createWriteThread();
                 createTerminalThread();
@@ -166,7 +166,7 @@ public class TCPServer
                                         }
                                     } else {
                                         // If incorrect, respond with "negative-ack"
-                                        System.out.println("'" + receivedMessage + "' is incorrect. Sending 'negative-ack' to " + clientSocket.getInetAddress() + ".");
+                                        System.out.println("'" + receivedMessage + "' is incorrect. Sending 'negative-ack' to " + clientUsername + " (" + clientSocket.getInetAddress() + ").");
                                         synchronized (socket) {
                                             String response = "negative-ack";
                                             outStream.write(response.getBytes("UTF-8"));
@@ -239,7 +239,7 @@ public class TCPServer
 
         // Increment question number
         questionNum++; 
-        System.out.println("Moving on to question " + questionNum);
+        System.out.println("\nMoving on to question " + questionNum);
 
         // Get new question from array
         String question = questions[questionNum]; 

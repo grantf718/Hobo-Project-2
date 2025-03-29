@@ -1,20 +1,20 @@
-Rhydon
-Lucario
-Moltres
-Water-type
-Bulbasaur
-Smeargle
-Magikarp
-8
-Thunderbolt (against Brock's Onix)
-Celebi
-Dark/Ghost (like Sableye and Spiritomb)
-Cynthia
-Mewtwo
-Thunder Stone
-Level 100
-Ghost/Poison
-Gengar and Nidorino (in the opening battle of Episode 1)
-Team Magma
-Thousand Arrows
-MissingNo.
+Rhydon, Pikachu, Bulbasaur, Mew
+Lucario, Zoroark, Riolu, Gallade
+Moltres, Articuno, Zapdos, Mewtwo
+Water-type, Fire-type, Electric-type, Grass-type
+Bulbasaur, Charmander, Squirtle, Pikachu
+Smeargle, Mew, Ditto, Porygon
+Magikarp, Feebas, Remoraid, Goldeen
+8, 7, 9, 10
+Thunderbolt (against Brock's Onix), Quick Attack, Iron Tail, Volt Tackle
+Celebi, Dialga, Palkia, Jirachi
+Dark/Ghost (like Sableye and Spiritomb), Psychic/Dark, Ghost/Poison, Normal/Ghost
+Cynthia, Steven, Lance, Alder
+Mewtwo, Ditto, Genesect, Porygon
+Thunder Stone, Moon Stone, Fire Stone, Leaf Stone
+Level 100, Level 99, Level 50, Level 255
+Ghost/Poison, Ghost, Poison, Dark
+Gengar and Nidorino (in the opening battle of Episode 1), Pikachu, Bulbasaur, Charmander
+Team Magma, Team Aqua, Team Rocket, Team Galactic
+Thousand Arrows, Dragon Dance, Earthquake, Core Enforcer
+MissingNo., 'M, Glitchy, PokeGod
