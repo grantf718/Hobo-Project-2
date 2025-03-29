@@ -250,7 +250,7 @@ public class TCPClient implements ActionListener {
         // Window is titled with the player's username
         window = new JFrame(clientUsername); 
         // Question
-		questionLabel = new JLabel(currentQuestion); 
+		questionLabel = new JLabel("Waiting for host to start"); 
 		window.add(questionLabel);
 		questionLabel.setBounds(10, 5, 350, 100);;
 		

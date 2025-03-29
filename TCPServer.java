@@ -51,7 +51,7 @@ public class TCPServer
         }
 
         // DEBUG: Print out arrays of questions and answers
-        printQnAs();
+        // printQnAs();
 
     	// Create server socket with assigned port
         try {
@@ -242,7 +242,7 @@ public class TCPServer
         System.out.println("\nMoving on to question " + questionNum);
 
         // Get new Q&A from array, tag both strings 
-        String question = "QUESTION " + questions[questionNum]; 
+        String question = "QUESTION Q" + questionNum + ". " + questions[questionNum]; 
         String currentAnswers = "ANSWERS " + answers[questionNum];
 
         // Send new question to all connected clients
