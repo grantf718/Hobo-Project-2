@@ -18,6 +18,7 @@ public class TCPServer
     private String[] questions;
 	private String[] answers;
     private int questionNum = 0;
+    private String correctAnswer;
 
     // Boolean to represent if a client has buzzed in. Set to TRUE once any client buzzes in before the rest. 
     // Used to send "ack" vs "negative-ack". Will reset upon new question
@@ -67,6 +68,7 @@ public class TCPServer
     // Accept client connections
     public void listenForConnections() {
         System.out.println("Listening for connections!\n");
+        System.out.println("Once everyone's in, enter 'start' to begin the game!\n");
         try {
             while (true) {
                 // Accept incoming connection from a client 
@@ -96,7 +98,9 @@ public class TCPServer
                     // Check terminal for the start message 
                     BufferedReader inputReader = new BufferedReader(new InputStreamReader(System.in));
                     String typedMessage = inputReader.readLine();
-                    if (typedMessage.equals("start")) { // Type 'start' to begin the game
+
+                    // Type 'start' to begin the game 
+                    if (typedMessage.equals("start") && questionNum == 0) { 
                         nextQuestion();
                     }
 
@@ -106,6 +110,7 @@ public class TCPServer
                             outStream.write(typedMessage.getBytes("UTF-8"));
                         }
                     }
+
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -131,7 +136,6 @@ public class TCPServer
             	// Check socket connectivity before doing anything
                 while (socket.isConnected()) {
                     try {
-                        
                         byte[] readBuffer = new byte[200];
                         // Read the data from client
                         int num = clientInStream.read(readBuffer);
@@ -141,44 +145,54 @@ public class TCPServer
                             System.arraycopy(readBuffer, 0, arrayBytes, 0, num);
                             String receivedMessage = new String(arrayBytes, "UTF-8");
 
-                            // Accept client username if it was sent over
+                            // Print out received message
+                            System.out.println("Incoming from " + clientUsername + " (" + clientIP + "): " + receivedMessage);
+
+                            // Handle client username
                             if(receivedMessage.startsWith("USER ")){
                                 clientUsername = receivedMessage.substring(5); // Remove the USER tag
                                 System.out.println("Set username " + clientUsername + " for " + clientIP);
-
-                            // If it's not a username being sent over, process the message as normal
-                            } else {
-                                // Print out received message
-                                System.out.println("Incoming from " + clientUsername + " (" + clientIP + "): " + receivedMessage);
-
-                                // Determine if this client was the first to buzz
-                                if(!firstClient){
-                                    // If it was, update firstClient to TRUE
+    
+                            // Handle client buzzing in
+                            } else if(receivedMessage.startsWith("buzz")){
+                                // Determine if there was already a client that was first to buzz
+                                if(!firstClient){ // <-- This client was first to buzz in
+                                    // Set firstClient to TRUE
                                     firstClient = !firstClient; 
+                                    // Send "ack" to client 
+                                    String response = "ack\n";
+                                    clientSocket.getOutputStream().write(response.getBytes("UTF-8"));
+                                    // Print
+                                    System.out.println(clientUsername + " (" + clientIP + ") was the first to buzz in! (Sent \"ack\")");
+                                } else { // <-- This client was not first to buzz in
+                                    // Send "negative-ack" to client
+                                    String response = "negative-ack\n";
+                                    clientSocket.getOutputStream().write(response.getBytes("UTF-8"));
+                                    // Print
+                                    System.out.println("Client " + clientSocket.getInetAddress() + " buzzed in too late. (Sent \"negative-ack\")");
 
-                                    // Determine if the client's answer is correct
-                                    if(receivedMessage.equals("correct answer")){
-                                        // If correct, respond with "ack"
-                                        System.out.println("'" + receivedMessage + "' is correct. Sending 'ack' to " + clientSocket.getInetAddress() + ".");
-                                        synchronized (socket) {
-                                            String response = "ack\n";
-                                            outStream.write(response.getBytes("UTF-8"));
-                                        }
-                                    } else {
-                                        // If incorrect, respond with "negative-ack"
-                                        System.out.println("'" + receivedMessage + "' is incorrect. Sending 'negative-ack' to " + clientUsername + " (" + clientSocket.getInetAddress() + ").");
-                                        synchronized (socket) {
-                                            String response = "negative-ack\n";
-                                            outStream.write(response.getBytes("UTF-8"));
-                                        }
+                                }
 
-                                    }
-
-                                    // Move to next question
-                                    nextQuestion();
-
+                            // Handle answer coming in
+                            } else if(receivedMessage.startsWith("ANSWER ")){
+                                // Determine if the client's answer is correct
+                                if(receivedMessage.equals(correctAnswer)){
+                                    // If correct
+                                    // DONT RESPOND WITH ACK HERE, THIS IS WRONG!
+                                    // System.out.println("'" + receivedMessage + "' is correct. Sending 'ack' to " + clientSocket.getInetAddress() + ".");
+                                    // synchronized (socket) {
+                                    //     String response = "ack\n";
+                                    //     outStream.write(response.getBytes("UTF-8"));
+                                    // }
                                 } else {
-                                    System.out.println("Client " + clientSocket.getInetAddress() + " buzzed in too late.");
+                                    // If incorrect
+                                    // DONT RESPOND WITH NEGATIVE-ACK HERE, THIS IS WRONG!
+                                    // System.out.println("'" + receivedMessage + "' is incorrect. Sending 'negative-ack' to " + clientUsername + " (" + clientSocket.getInetAddress() + ").");
+                                    // synchronized (socket) {
+                                    //     String response = "negative-ack\n";
+                                    //     outStream.write(response.getBytes("UTF-8"));
+                                    // }
+
                                 }
                             }
                         } 
@@ -228,6 +242,7 @@ public class TCPServer
 
     // Moves to the next question
     public void nextQuestion(){
+
         // Check if there are no questions left
         if (questionNum >= questions.length) {
             System.out.println("No more questions available.");
@@ -263,6 +278,8 @@ public class TCPServer
             }
         }
 
+        // Reset firstClient to false 
+        firstClient = false;
         
     }
 

@@ -32,12 +32,14 @@ public class TCPClient implements ActionListener {
 	private ButtonGroup optionGroup;
 	private JLabel questionLabel;
 	private JLabel timer;
+    private Timer t;
 	private JLabel score;
 	private TimerTask clock;
 	private JFrame window;
 
     private String currentQuestion;
     private String[] answerChoices = new String[4];
+    private String currentSelection;
     private String correctAnswer;
 
     // ---------------------------------------- // 
@@ -48,8 +50,8 @@ public class TCPClient implements ActionListener {
         private final int DEST_PORT = 1234;
 
         // Destination IP: (must match server)
-        // private final String DEST_IP = "localhost"; // <-- localhost (for testing purposes)
-        private final String DEST_IP = "10.111.134.82"; // <-- Grant's IP
+        private final String DEST_IP = "localhost"; // <-- localhost (for testing purposes)
+        // private final String DEST_IP = "10.111.134.82"; // <-- Grant's IP
         // private final String DEST_IP = ""; // <-- Evan's IP
         // private final String DEST_IP = ""; // <-- Jessica's IP
 
@@ -125,11 +127,12 @@ public class TCPClient implements ActionListener {
                             // String receivedMessage = new String(arrayBytes, "UTF-8");
                             // System.out.println("Incoming from server: " + receivedMessage);
 
+
                             // Deal with received message 
                             BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
                             String receivedLine;
 
-                            // Go line by line to separate message into Qs and As
+                            // Go line by line to separate message
                             while ((receivedLine = reader.readLine()) != null) {
 
                                 System.out.println("Line: " + receivedLine);
@@ -142,15 +145,15 @@ public class TCPClient implements ActionListener {
 
                                 // Set incoming question & display it on GUI 
                                 } else if(receivedLine.startsWith("QUESTION ")){
+
+                                    // Start timer
+                                    t.schedule(clock, 0, 1000); // clock is called every second
+
                                     
                                     currentQuestion = receivedLine.substring(9); // Remove QUESTION tag
 
                                     // DEBUG: Print current question
                                     System.out.println("Current question set to: " + currentQuestion);
-
-                                    // Update GUI with new information 
-                                    // questionLabel.setText(currentQuestion);
-                                    // window.repaint();
 
                                     // Update question label on the Event Dispatch Thread
                                     SwingUtilities.invokeLater(() -> {
@@ -166,7 +169,7 @@ public class TCPClient implements ActionListener {
                                     correctAnswer = receivedLine.substring(8, receivedLine.indexOf(','));
 
                                     // Set answer choices
-                                    String parts[] = receivedLine.substring(8).split(",");
+                                    String parts[] = receivedLine.substring(8).split(", ");
 
                                     for (int i = 0; i < 4; i++) {
                                         answerChoices[i] = parts[i];
@@ -185,10 +188,7 @@ public class TCPClient implements ActionListener {
                                             options[i].setText(answerChoices[i]);
                                         }
                                         window.repaint();
-                                    });
-
-                                    // window.repaint();
-                                    
+                                    });                                    
                                 }
                             }
                         // }
@@ -231,11 +231,9 @@ public class TCPClient implements ActionListener {
                         	notifyAll();
                         }
 
-                    } 
-                	catch (IOException i) {
+                    } catch (IOException i) {
                         i.printStackTrace();
-                    } 
-                	catch (InterruptedException ie) {
+                    } catch (InterruptedException ie) {
                         ie.printStackTrace();
                     }
                 }
@@ -247,8 +245,10 @@ public class TCPClient implements ActionListener {
 
     // Create GUI
     public void createGUI(){
+
         // Window is titled with the player's username
         window = new JFrame(clientUsername); 
+
         // Question
 		questionLabel = new JLabel("Waiting for host to start"); 
 		window.add(questionLabel);
@@ -257,38 +257,40 @@ public class TCPClient implements ActionListener {
         // Answer choice buttons
 		options = new JRadioButton[4];
 		optionGroup = new ButtonGroup();
-		for(int index = 0; index < options.length; index++)
-		{
-			options[index] = new JRadioButton(answerChoices[index]);  // represents an option
-			// if a radio button is clicked, the event would be thrown to this class to handle
+		for(int index = 0; index < options.length; index++) {
+			options[index] = new JRadioButton(answerChoices[index]);
 			options[index].addActionListener(this);
 			options[index].setBounds(10, 110+(index*20), 350, 20);
+            // Set action command (button click) to 'Option #' to standardize across all questions
+            options[index].setActionCommand("Option " + index);
 			window.add(options[index]);
-			optionGroup.add(options[index]);
+			optionGroup.add(options[index]);            
 		}
-
-		timer = new JLabel("TIMER");  // represents the countdown shown on the window
-		timer.setBounds(250, 250, 100, 20);
-		clock = new TimerCode(15);  // represents clocked task that should run after X seconds
-		Timer t = new Timer();  // event generator
-		t.schedule(clock, 0, 1000); // clock is called every second
-		window.add(timer);
 		
-		
-		score = new JLabel("SCORE"); // represents the score
+		// Score
+		score = new JLabel("SCORE"); 
 		score.setBounds(50, 250, 100, 20);
 		window.add(score);
 
-		poll = new JButton("Poll");  // button that use clicks/ like a buzzer
+        // Poll
+		poll = new JButton("Poll"); 
 		poll.setBounds(10, 300, 100, 20);
-		poll.addActionListener(this);  // calls actionPerformed of this class
+		poll.addActionListener(this); 
 		window.add(poll);
 		
-		submit = new JButton("Submit");  // button to submit their answer
+        // Submit
+		submit = new JButton("Submit"); 
 		submit.setBounds(200, 300, 100, 20);
-		submit.addActionListener(this);  // calls actionPerformed of this class
+		submit.addActionListener(this); 
 		window.add(submit);
-		
+
+        // Timer
+		timer = new JLabel("TIMER");  
+		timer.setBounds(250, 250, 100, 20);
+		clock = new TimerCode(15); 
+		t = new Timer(); 
+		window.add(timer);
+
 		window.setSize(400,400);
 		window.setBounds(50, 50, 400, 400);
 		window.setLayout(null);
@@ -298,67 +300,83 @@ public class TCPClient implements ActionListener {
 
     }
 
-    	// this method is called when you check/uncheck any radio button
-	// this method is called when you press either of the buttons- submit/poll
+    // Called whenever a user selects a button
 	@Override
-	public void actionPerformed(ActionEvent e)
-	{
-		System.out.println("You clicked " + e.getActionCommand());
+	public void actionPerformed(ActionEvent e) {
+		
+        System.out.println("You clicked " + e.getActionCommand());
 		
 		// input refers to the radio button you selected or button you clicked
 		String input = e.getActionCommand();  
-		switch(input)
-		{
+
+		switch(input){
 			case "Option 1":	
-                // Your code here
+                // Set current selection
+                currentSelection = answerChoices[0];
+                System.out.println("Current selection: " + currentSelection);
                 break;
 			case "Option 2":	
-                // Your code here
+                // Set current selection
+                currentSelection = answerChoices[1];
+                System.out.println("Current selection: " + currentSelection);
                 break;
 			case "Option 3":	
-                // Your code here
+                // Set current selection
+                currentSelection = answerChoices[2];
+                System.out.println("Current selection: " + currentSelection);
                 break;
 			case "Option 4":	
-                // Your code here
+                // Set current selection
+                currentSelection = answerChoices[3];
+                System.out.println("Current selection: " + currentSelection);
                 break;
 			case "Poll":		
-                // Your code here
+                // Send poll message 'buzz' to server
+                try {
+                    String buzz = "buzz";
+                    outStream.write(buzz.getBytes("UTF-8"));
+                    System.out.println("Sent 'buzz' to server");
+                } catch (IOException i) {
+                    i.printStackTrace();
+                } 
                 break;
-			case "Submit":		
-                // Your code here
+			case "Submit":
+                // Send user's answer to server
+                try {
+                    String selectionMessage = "ANSWER " + currentSelection;
+                    outStream.write(selectionMessage.getBytes("UTF-8"));
+                    System.out.println("Sent \"" + selectionMessage + "\" to server");
+                } catch (IOException i) {
+                    i.printStackTrace();
+                } 
+                
                 break;
-			default:
-                System.out.println("Incorrect Option");
 		}
 	}
 
 
-    // this class is responsible for running the timer on the window
-	public class TimerCode extends TimerTask
-	{
-		private int duration;  // write setters and getters as you need
+    // Runs the timer 
+	public class TimerCode extends TimerTask {
+		
+        private int duration; 
 		private boolean secondPhase = false;
 
-		public TimerCode(int duration)
-		{
+		public TimerCode(int duration) {
 			this.duration = duration;
 		}
 
 		@Override
-		public void run()
-		{
+		public void run() {
+
 			// First Phase (Polling Phase)
-			if(duration > 0 && !secondPhase) 
-			{
+			if(duration > 0 && !secondPhase) {
 				// Disable options initially
 				for(int option = 0; option < options.length; option++)
 					options[option].setEnabled(false);
 
 				submit.setEnabled(false);
 				poll.setEnabled(true);
-			} 
-			else if(duration <= 0 && !secondPhase)
-			{
+			} else if(duration <= 0 && !secondPhase) {
 				timer.setText("Timer expired");
 				window.repaint();
 
@@ -368,9 +386,7 @@ public class TCPClient implements ActionListener {
 			}
 
 			// Second Phase (Answering Phase)
-
-			if(duration > 0 && secondPhase) 
-			{
+			if(duration > 0 && secondPhase) {
 				// Enable options and submit button
 				submit.setEnabled(true);
 
@@ -379,8 +395,7 @@ public class TCPClient implements ActionListener {
 
 				poll.setEnabled(false);
 			}  
-			else if(duration <= 0 && secondPhase)
-			{
+			else if(duration <= 0 && secondPhase) {
 				timer.setText("Timer expired");
 				window.repaint();
 
