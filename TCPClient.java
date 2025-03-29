@@ -13,7 +13,6 @@ public class TCPClient
     private OutputStream outStream = null;
 
     private String clientUsername;
-    private boolean sentUsername = false;
 
     // ---------------------------------------- // 
     //            Destination Socket:           //
@@ -68,6 +67,21 @@ public class TCPClient
         	// Fetch streams
             inStream = socket.getInputStream();
             outStream = socket.getOutputStream();
+
+            // Immediately send the client's username to the server (with USER tag)
+            // String usernameMessage = "USER " + clientUsername;
+            // outStream.write(usernameMessage.getBytes("UTF-8"));
+            // // outStream.flush();
+            // System.out.println("Username sent to server: " + usernameMessage);
+
+            // Send server the client's username upon socket creation
+            synchronized (socket) {
+                clientUsername = "USER " + clientUsername; // Add USER tag so server can recognize it
+                outStream.write(clientUsername.getBytes("UTF-8"));
+                System.out.println("Sent username to server.");
+            }
+
+            // Create threads for client
             createReadThread();
             createWriteThread();
         } 
@@ -93,9 +107,9 @@ public class TCPClient
                             String recvedMessage = new String(arrayBytes, "UTF-8");
                             System.out.println("Incoming from server: " + recvedMessage);
                         }
-                        else {
-                        	notifyAll();
-                        }
+                        // else {
+                        // 	notifyAll();
+                        // }
                     }
                     catch (SocketException se) {
                         System.exit(0);
@@ -115,15 +129,6 @@ public class TCPClient
             public void run() {
                 while (socket.isConnected()) {
                 	try {
-
-                        // Send server the client's username
-                        if(!sentUsername){
-                            synchronized (socket) {
-                                clientUsername = "USER " + clientUsername; // Add USER tag so server can recognize it
-                                outStream.write(clientUsername.getBytes("UTF-8"));
-                            }
-                            sentUsername = true; // To make it only send once 
-                        }
 
                         // THIS IS THE ORIGINAL CODE TO ACCEPT A TYPED LINE FROM TERMINAL, 
                         // WHICH IS NOT NEEDED BUT CONTAINS THE CODE TO WRITE TO SERVER.

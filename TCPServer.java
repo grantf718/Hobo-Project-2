@@ -2,7 +2,9 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 
 public class TCPServer 
@@ -11,13 +13,12 @@ public class TCPServer
     private Socket socket = null;
     private InputStream inStream = null;
     private OutputStream outStream = null;
+    private List<OutputStream> clientOutputs = new ArrayList<>(); // List of client output streams 
 
     // Arrays to store questions and answers from file
     private String[] questions;
 	private String[] answers;
-
-    // Map of client IPs and their usernames 
-    private HashMap<String, String> clientMap = new HashMap<>(); 
+    private int questionNum = 0;
 
     // Boolean to represent if a client has buzzed in. Set to TRUE once any client buzzes in before the rest. 
     // Used to send "ack" vs "negative-ack". Will reset upon new question
@@ -63,25 +64,54 @@ public class TCPServer
 
     }
 
-    // Accept client connections
+    // Accept client connections (calls readThread and writeThread)
     public void listenForConnections() {
         System.out.println("Listening for connections!\n");
         try {
             while (true) {
                 // Accept incoming connection from a client 
             	socket = serverSocket.accept();
-            	// Fetch the streams from the connected client	
+            	// Fetch the streams from client	
                 inStream = socket.getInputStream();
                 outStream = socket.getOutputStream();
-                // System.out.println("Connected to client " + socket.getInetAddress());
+                // Store output stream of client
+                clientOutputs.add(outStream); 
                 System.out.println("Client " + socket.getInetAddress() + " has connected");
+                // Create a new thread for client
                 createReadThread();
-                createWriteThread();
+                // createWriteThread();
+                createTerminalThread();
             }
         }
         catch (IOException io) {
             io.printStackTrace();
         }
+    }
+
+    // Creates a thread for terminal input so as to not block client handling while waiting for input
+    public void createTerminalThread(){
+        Thread terminalThread = new Thread() {
+            public void run(){
+                try {
+                    // Check terminal for the start message 
+                    BufferedReader inputReader = new BufferedReader(new InputStreamReader(System.in));
+                    String typedMessage = inputReader.readLine();
+                    if (typedMessage.equals("start")) { // Type 'start' to begin the game
+                        nextQuestion();
+                    }
+
+                    // DEBUG: Send typed message 'test' to client
+                    if (typedMessage.equals("test")) { 
+                        synchronized (socket) {
+                            outStream.write(typedMessage.getBytes("UTF-8"));
+                        }
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        terminalThread.start();
     }
 
     // Creates and starts an anonymous thread that continuously monitors the input stream of an active socket connection.
@@ -101,6 +131,7 @@ public class TCPServer
             	// Check socket connectivity before doing anything
                 while (socket.isConnected()) {
                     try {
+                        
                         byte[] readBuffer = new byte[200];
                         // Read the data from client
                         int num = clientInStream.read(readBuffer);
@@ -113,7 +144,6 @@ public class TCPServer
                             // Accept client username if it was sent over
                             if(receivedMessage.startsWith("USER ")){
                                 clientUsername = receivedMessage.substring(5); // Remove the USER tag
-                                clientMap.put(clientIP,clientUsername);
                                 System.out.println("Set username " + clientUsername + " for " + clientIP);
 
                             // If it's not a username being sent over, process the message as normal
@@ -143,29 +173,21 @@ public class TCPServer
                                         }
 
                                     }
-                            } else {
-                                System.out.println("Client " + clientSocket.getInetAddress() + " buzzed in too late.");
+
+                                    // Move to next question
+                                    nextQuestion();
+
+                                } else {
+                                    System.out.println("Client " + clientSocket.getInetAddress() + " buzzed in too late.");
+                                }
                             }
-
-
-                            }
-
-
                         } 
-                        else {
-                            // Commented out notifyAll because it was giving exceptions 
-                            // notifyAll();
-                        }
-                    } 
-                    catch (SocketException se) {
-                        System.out.println("SocketException: Client " + clientSocket.getInetAddress() + " disconnected.");
-                        System.exit(0);
-
-                    }
-                    catch (IOException i) {
+                    } catch (EOFException | SocketException se) {
+                        se.printStackTrace();
+                    } catch (IOException i) {
                         i.printStackTrace();
                         System.out.println("IOException while reading from " + clientSocket.getInetAddress() + ": " + i.getMessage());
-                    }
+                    } 
                 }
             }
         };
@@ -174,47 +196,66 @@ public class TCPServer
     }
 
     //write thread using anonymous class
-    public void createWriteThread() 
-    {
-        Thread writeThread = new Thread() 
-        {
-            public void run() 
-            {
-            	//check socket connectivity
-                while (socket.isConnected()) 
-                {
-                    try 
-                    {
-                    	//Use BufferedReader or Scanner to read from console
-                        BufferedReader inputReader = new BufferedReader(new InputStreamReader(System.in));
-                        sleep(100);
-                        String typedMessage = inputReader.readLine();
-                        if (typedMessage != null && typedMessage.length() > 0) 
-                        {
-                            synchronized (socket) 
-                            {
-                                outStream.write(typedMessage.getBytes("UTF-8"));
-                            }
-                            sleep(100);
-                        } 
-                        else 
-                        {
-                        	notifyAll();
-                        }
-                    }
-                    catch (IOException i) 
-                    {
-                        i.printStackTrace();
-                    } 
-                    catch (InterruptedException ie) 
-                    {
-                        ie.printStackTrace();
-                    }
-               }
+    // public void createWriteThread() {
+
+    //     // Capture the current socket and stream in local variables to be used only by each client's unique thread
+    //     final Socket clientSocket = socket;
+    //     final InputStream clientInStream = inStream;
+
+    //     // Store client's IP for easy access 
+    //     final String clientIP = clientSocket.getInetAddress().toString();
+
+    //     Thread writeThread = new Thread() {
+
+    //         public void run() {
+    //         	//check socket connectivity
+    //             while (socket.isConnected()) {
+    //                 try {
+
+    //                     // Code to write here
+                        
+    //                 } catch (IOException i) {
+    //                     i.printStackTrace();
+    //                 } catch (InterruptedException ie) {
+    //                     ie.printStackTrace();
+    //                 } 
+    //            }
+    //         }
+    //     };
+    //     writeThread.setPriority(Thread.MAX_PRIORITY);
+    //     writeThread.start();
+    // }
+
+    // Moves to the next question
+    public void nextQuestion(){
+        // Check if there are no questions left
+        if (questionNum >= questions.length) {
+            System.out.println("No more questions available.");
+            return;
+            // . . . . . . . . . . . . .
+            // . Code to end game here .
+            // . . . . . . . . . . . . .
+        }
+
+        // Increment question number
+        questionNum++; 
+        System.out.println("Moving on to question " + questionNum);
+
+        // Get new question from array
+        String question = questions[questionNum]; 
+
+        // Send new question to all connected clients
+        for (OutputStream outStream : clientOutputs) {
+            try {
+                System.out.println("Sending Q" + questionNum + " to a client");
+                outStream.write((question + "\n").getBytes("UTF-8"));
+                outStream.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        };
-        writeThread.setPriority(Thread.MAX_PRIORITY);
-        writeThread.start();
+        }
+
+        
     }
 
     // Function to read in a text file containing 20 questions or answers separated by line
@@ -235,9 +276,8 @@ public class TCPServer
         return lines;
     }
     
-    public static void main(String[] args)
-    {
-        TCPServer chatServer = new TCPServer();
-        chatServer.listenForConnections();
+    public static void main(String[] args) {
+        TCPServer server = new TCPServer();
+        server.listenForConnections();
     }
 }
