@@ -161,14 +161,14 @@ public class TCPServer
                                         // If correct, respond with "ack"
                                         System.out.println("'" + receivedMessage + "' is correct. Sending 'ack' to " + clientSocket.getInetAddress() + ".");
                                         synchronized (socket) {
-                                            String response = "ack";
+                                            String response = "ack\n";
                                             outStream.write(response.getBytes("UTF-8"));
                                         }
                                     } else {
                                         // If incorrect, respond with "negative-ack"
                                         System.out.println("'" + receivedMessage + "' is incorrect. Sending 'negative-ack' to " + clientUsername + " (" + clientSocket.getInetAddress() + ").");
                                         synchronized (socket) {
-                                            String response = "negative-ack";
+                                            String response = "negative-ack\n";
                                             outStream.write(response.getBytes("UTF-8"));
                                         }
 
@@ -249,12 +249,15 @@ public class TCPServer
         for (OutputStream outStream : clientOutputs) {
             System.out.println("Sending Q" + questionNum + " to clients\n");
             try {
-                // Send question
-                outStream.write((question + "\n").getBytes("UTF-8"));
-                outStream.flush();
-                // Send answers
-                outStream.write(currentAnswers.getBytes("UTF-8"));
-                outStream.flush();
+                // Send question and answers in one string on different lines 
+                String fullMessage = question + "\n" + currentAnswers + "\n";
+                outStream.write(fullMessage.getBytes("UTF-8"));
+
+                // outStream.write((question + "\n").getBytes("UTF-8"));
+                // outStream.flush();
+                // // Send answers
+                // outStream.write(currentAnswers.getBytes("UTF-8"));
+                // outStream.flush();
             } catch (IOException e) {
                 e.printStackTrace();
             }
