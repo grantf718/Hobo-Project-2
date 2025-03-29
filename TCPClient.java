@@ -104,8 +104,19 @@ public class TCPClient
                         if (num > 0) {
                             byte[] arrayBytes = new byte[num];
                             System.arraycopy(readBuffer, 0, arrayBytes, 0, num);
-                            String recvedMessage = new String(arrayBytes, "UTF-8");
-                            System.out.println("Incoming from server: " + recvedMessage);
+                            String receivedMessage = new String(arrayBytes, "UTF-8");
+                            System.out.println("Incoming from server: " + receivedMessage);
+
+                            if(receivedMessage.startsWith("QUESTION ")){
+                                // . . . . . . . . . . . . . . . . .
+                                // . Code to display question here .
+                                // . . . . . . . . . . . . . . . . .
+                            } else if (receivedMessage.startsWith("ANSWERS ")){
+                                // . . . . . . . . . . . . . . . . .
+                                // . Code to display answers here  .
+                                // . . . . . . . . . . . . . . . . .
+                            }
+
                         }
                         // else {
                         // 	notifyAll();

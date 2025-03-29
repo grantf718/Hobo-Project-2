@@ -241,14 +241,14 @@ public class TCPServer
         questionNum++; 
         System.out.println("\nMoving on to question " + questionNum);
 
-        // Get new Q&A from array
-        String question = questions[questionNum]; 
-        String currentAnswers = answers[questionNum];
+        // Get new Q&A from array, tag both strings 
+        String question = "QUESTION " + questions[questionNum]; 
+        String currentAnswers = "ANSWERS " + answers[questionNum];
 
         // Send new question to all connected clients
         for (OutputStream outStream : clientOutputs) {
+            System.out.println("Sending Q" + questionNum + " to clients\n");
             try {
-                System.out.println("Sending Q" + questionNum + " to a client");
                 // Send question
                 outStream.write((question + "\n").getBytes("UTF-8"));
                 outStream.flush();
