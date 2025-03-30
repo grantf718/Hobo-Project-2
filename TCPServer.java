@@ -3,11 +3,12 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 
-public class TCPServer 
-{
+public class TCPServer {
     private ServerSocket serverSocket = null;
     private Socket socket = null;
     private InputStream inStream = null;
@@ -23,6 +24,10 @@ public class TCPServer
     // Boolean to represent if a client has buzzed in. Set to TRUE once any client buzzes in before the rest. 
     // Used to send "ack" vs "negative-ack". Will reset upon new question
     private boolean firstClient = false; 
+
+    // Set to represent all clients that have buzzed in for the current question. Gets cleared for next question
+    private Set<String> buzzedClients = new HashSet<>();
+
 
     // ---------------------------------------- // 
     //              Server Port:                //
@@ -94,25 +99,27 @@ public class TCPServer
     public void createTerminalThread(){
         Thread terminalThread = new Thread() {
             public void run(){
-                try {
-                    // Check terminal for the start message 
-                    BufferedReader inputReader = new BufferedReader(new InputStreamReader(System.in));
-                    String typedMessage = inputReader.readLine();
-
-                    // Type 'start' to begin the game 
-                    if (typedMessage.equals("start") && questionNum == 0) { 
-                        nextQuestion();
-                    }
-
-                    // DEBUG: Send typed message 'test' to client
-                    if (typedMessage.equals("test")) { 
-                        synchronized (socket) {
-                            outStream.write(typedMessage.getBytes("UTF-8"));
+                while(true){
+                    try {
+                        // Check terminal for the start message 
+                        BufferedReader inputReader = new BufferedReader(new InputStreamReader(System.in));
+                        String typedMessage = inputReader.readLine();
+    
+                        // Type 'start' to begin the game 
+                        if (typedMessage.equals("start") && questionNum == 0) { 
+                            nextQuestion();
                         }
+    
+                        // DEBUG: Send typed message 'test' to client
+                        if (typedMessage.equals("test")) { 
+                            synchronized (socket) {
+                                outStream.write(typedMessage.getBytes("UTF-8"));
+                            }
+                        }
+    
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
-
-                } catch (IOException e) {
-                    e.printStackTrace();
                 }
             }
         };
@@ -136,6 +143,7 @@ public class TCPServer
             	// Check socket connectivity before doing anything
                 while (socket.isConnected()) {
                     try {
+
                         byte[] readBuffer = new byte[200];
                         // Read the data from client
                         int num = clientInStream.read(readBuffer);
@@ -147,7 +155,7 @@ public class TCPServer
 
                             // Print out received message
                             System.out.println("Incoming from " + clientUsername + " (" + clientIP + "): " + receivedMessage);
-
+                            
                             // Handle client username
                             if(receivedMessage.startsWith("USER ")){
                                 clientUsername = receivedMessage.substring(5); // Remove the USER tag
@@ -155,6 +163,16 @@ public class TCPServer
     
                             // Handle client buzzing in
                             } else if(receivedMessage.startsWith("buzz")){
+    
+                                // Check if the client has already buzzed
+                                if (buzzedClients.contains(clientIP)) {
+                                    System.out.println(clientUsername + " (" + clientIP + ") attempted to buzz again but was ignored.");
+                                    continue; // Ignore subsequent buzzes
+                                }
+                            
+                                // Add the client to the set
+                                buzzedClients.add(clientIP);                            
+
                                 // Determine if there was already a client that was first to buzz
                                 if(!firstClient){ // <-- This client was first to buzz in
                                     // Set firstClient to TRUE
@@ -175,25 +193,31 @@ public class TCPServer
 
                             // Handle answer coming in
                             } else if(receivedMessage.startsWith("ANSWER ")){
+
+                                // DEBUG
+                                System.out.println("Correct answer: " + correctAnswer);
+                                String receivedAnswer = receivedMessage.substring(7);
+                                System.out.println("Received answer: " + receivedAnswer);
+
                                 // Determine if the client's answer is correct
-                                if(receivedMessage.equals(correctAnswer)){
+                                if(receivedAnswer.equals(correctAnswer)){
                                     // If correct
-                                    // DONT RESPOND WITH ACK HERE, THIS IS WRONG!
-                                    // System.out.println("'" + receivedMessage + "' is correct. Sending 'ack' to " + clientSocket.getInetAddress() + ".");
-                                    // synchronized (socket) {
-                                    //     String response = "ack\n";
-                                    //     outStream.write(response.getBytes("UTF-8"));
-                                    // }
+                                    System.out.println(receivedAnswer + " is correct!");
+
+                                    // Award points here
+
                                 } else {
                                     // If incorrect
-                                    // DONT RESPOND WITH NEGATIVE-ACK HERE, THIS IS WRONG!
-                                    // System.out.println("'" + receivedMessage + "' is incorrect. Sending 'negative-ack' to " + clientUsername + " (" + clientSocket.getInetAddress() + ").");
-                                    // synchronized (socket) {
-                                    //     String response = "negative-ack\n";
-                                    //     outStream.write(response.getBytes("UTF-8"));
-                                    // }
+                                    System.out.println(receivedMessage + " is incorrect.");
+
+                                    // Deduct points here
 
                                 }
+
+                            // Handle next question signal
+                            } else if(receivedMessage.startsWith("NEXT")){
+                                System.out.println("Received NEXT, calling nextQuestion");
+                                nextQuestion();
                             }
                         } 
                     } catch (EOFException | SocketException se) {
@@ -242,7 +266,7 @@ public class TCPServer
 
     // Moves to the next question
     public void nextQuestion(){
-
+        
         // Check if there are no questions left
         if (questionNum >= questions.length) {
             System.out.println("No more questions available.");
@@ -256,9 +280,17 @@ public class TCPServer
         questionNum++; 
         System.out.println("\nMoving on to question " + questionNum);
 
+        // Set the current correct answer
+        correctAnswer = answers[questionNum-1].substring(0, answers[questionNum-1].indexOf(','));;
+        System.out.println("(Correct answer for Q" + questionNum + ": " + correctAnswer + ")");
+        
+
+        // Clear the set of buzzed in clients
+        buzzedClients.clear();
+
         // Get new Q&A from array, tag both strings 
-        String question = "QUESTION Q" + questionNum + ". " + questions[questionNum]; 
-        String currentAnswers = "ANSWERS " + answers[questionNum];
+        String question = "QUESTION Q" + questionNum + ". " + questions[questionNum-1]; 
+        String currentAnswers = "ANSWERS " + answers[questionNum-1];
 
         // Send new question to all connected clients
         for (OutputStream outStream : clientOutputs) {

@@ -41,6 +41,8 @@ public class TCPClient implements ActionListener {
     private String[] answerChoices = new String[4];
     private String currentSelection;
     private String correctAnswer;
+    private boolean ack = false;
+    private boolean submitted = false;
 
     // ---------------------------------------- // 
     //            Destination Socket:           //
@@ -50,8 +52,8 @@ public class TCPClient implements ActionListener {
         private final int DEST_PORT = 1234;
 
         // Destination IP: (must match server)
-        private final String DEST_IP = "localhost"; // <-- localhost (for testing purposes)
-        // private final String DEST_IP = "10.111.134.82"; // <-- Grant's IP
+        // private final String DEST_IP = "localhost"; // <-- localhost (for testing purposes)
+        private final String DEST_IP = "10.111.134.82"; // <-- Grant's IP
         // private final String DEST_IP = ""; // <-- Evan's IP
         // private final String DEST_IP = ""; // <-- Jessica's IP
 
@@ -85,6 +87,13 @@ public class TCPClient implements ActionListener {
 
         // Create GUI
         createGUI();
+
+        // Disable buttons by default
+        for(int option = 0; option < options.length; option++)
+            options[option].setEnabled(false);
+        poll.setEnabled(false);
+        submit.setEnabled(false);
+
     }
 
     // Create client socket
@@ -135,20 +144,33 @@ public class TCPClient implements ActionListener {
                             // Go line by line to separate message
                             while ((receivedLine = reader.readLine()) != null) {
 
-                                System.out.println("Line: " + receivedLine);
+                                System.out.println("Incoming line: " + receivedLine);
 
                                 // Handle correct answer
                                 if(receivedLine.startsWith("ack")){
+                                    // After polling phase, enable buttons 
+                                    System.out.println("You were the first to buzz in!");
+                                    ack = true;
 
                                 // Handle incorrect answer
                                 } else if (receivedLine.startsWith("negative-ack")){
+                                    // Keep buttons disabled 
+                                    System.out.println("You were not the first to buzz in.");
 
                                 // Set incoming question & display it on GUI 
                                 } else if(receivedLine.startsWith("QUESTION ")){
 
-                                    // Start timer
-                                    t.schedule(clock, 0, 1000); // clock is called every second
+                                    // Cancel any existing timer and timer task
+                                    if(t != null) {
+                                        t.cancel();
+                                    }
+                                    // Create a new Timer and TimerTask for the new question
+                                    t = new Timer();
+                                    clock = new TimerCode(15);
+                                    t.schedule(clock, 0, 1000);
 
+                                    // // Start timer
+                                    // t.schedule(clock, 0, 1000); // clock is called every second
                                     
                                     currentQuestion = receivedLine.substring(9); // Remove QUESTION tag
 
@@ -261,7 +283,7 @@ public class TCPClient implements ActionListener {
 			options[index] = new JRadioButton(answerChoices[index]);
 			options[index].addActionListener(this);
 			options[index].setBounds(10, 110+(index*20), 350, 20);
-            // Set action command (button click) to 'Option #' to standardize across all questions
+            // Set action command (upon button click) to 'Option #' to standardize across all questions
             options[index].setActionCommand("Option " + index);
 			window.add(options[index]);
 			optionGroup.add(options[index]);            
@@ -300,6 +322,16 @@ public class TCPClient implements ActionListener {
 
     }
 
+    // Getter for ack
+    public boolean getAck(){
+        return ack;
+    }
+
+    // Setter for ack
+    public void setAck(boolean ack){
+        this.ack = ack;
+    }
+
     // Called whenever a user selects a button
 	@Override
 	public void actionPerformed(ActionEvent e) {
@@ -310,22 +342,22 @@ public class TCPClient implements ActionListener {
 		String input = e.getActionCommand();  
 
 		switch(input){
-			case "Option 1":	
+			case "Option 0":	
                 // Set current selection
                 currentSelection = answerChoices[0];
                 System.out.println("Current selection: " + currentSelection);
                 break;
-			case "Option 2":	
+			case "Option 1":	
                 // Set current selection
                 currentSelection = answerChoices[1];
                 System.out.println("Current selection: " + currentSelection);
                 break;
-			case "Option 3":	
+			case "Option 2":	
                 // Set current selection
                 currentSelection = answerChoices[2];
                 System.out.println("Current selection: " + currentSelection);
                 break;
-			case "Option 4":	
+			case "Option 3":	
                 // Set current selection
                 currentSelection = answerChoices[3];
                 System.out.println("Current selection: " + currentSelection);
@@ -341,6 +373,9 @@ public class TCPClient implements ActionListener {
                 } 
                 break;
 			case "Submit":
+
+                submitted = true;
+
                 // Send user's answer to server
                 try {
                     String selectionMessage = "ANSWER " + currentSelection;
@@ -349,6 +384,11 @@ public class TCPClient implements ActionListener {
                 } catch (IOException i) {
                     i.printStackTrace();
                 } 
+
+                // Disable options & submit button for the rest of the turn
+                for(int option = 0; option < options.length; option++)
+                    options[option].setEnabled(false);
+                submit.setEnabled(false);
                 
                 break;
 		}
@@ -359,7 +399,7 @@ public class TCPClient implements ActionListener {
 	public class TimerCode extends TimerTask {
 		
         private int duration; 
-		private boolean secondPhase = false;
+		private static boolean secondPhase = false;
 
 		public TimerCode(int duration) {
 			this.duration = duration;
@@ -370,38 +410,72 @@ public class TCPClient implements ActionListener {
 
 			// First Phase (Polling Phase)
 			if(duration > 0 && !secondPhase) {
-				// Disable options initially
+				// Disable options
 				for(int option = 0; option < options.length; option++)
 					options[option].setEnabled(false);
-
+                    
 				submit.setEnabled(false);
 				poll.setEnabled(true);
+            // Transition to the Second Phase (Answering Phase)
 			} else if(duration <= 0 && !secondPhase) {
 				timer.setText("Timer expired");
 				window.repaint();
 
-				// Transition to the Second Phase (Answering Phase)
 				secondPhase = true;
 				duration = 10;
 			}
 
 			// Second Phase (Answering Phase)
 			if(duration > 0 && secondPhase) {
-				// Enable options and submit button
-				submit.setEnabled(true);
 
-				for(int option = 0; option < options.length; option++)
-					options[option].setEnabled(true);
-
+                // If you haven't already submitted an answer:
+                if(!submitted){
+                    // Enable answer buttons & submit upon phase 2 only if you buzzed in first
+                    if(getAck()){
+                        for(int i = 0; i < options.length; i++){
+                            options[i].setEnabled(true);
+                        }
+                        submit.setEnabled(true);
+                    }
+                }
+                
+				// Disable poll button
 				poll.setEnabled(false);
-			}  
-			else if(duration <= 0 && secondPhase) {
+
+            // Move on to next question
+			} else if(duration <= 0 && secondPhase) {
 				timer.setText("Timer expired");
 				window.repaint();
+                
+                // Wait for 3 seconds before resetting
+                try {
+                    Thread.sleep(3000); // 3000 milliseconds = 3 seconds
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
 
 				// Reset to the first phase for the next question
 				duration = 15;
 				secondPhase = false;
+
+                // Reset ack
+                setAck(false);
+
+                // Clear selections from any buttons
+                optionGroup.clearSelection();
+    
+
+                // Let server know to move onto next question
+                try {
+                    String nextQuestion = "NEXT";
+                    outStream.write(nextQuestion.getBytes("UTF-8"));
+                    System.out.println("Sent \"" + nextQuestion + "\" to server");
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
 			}
 
 			// Set the timer color
