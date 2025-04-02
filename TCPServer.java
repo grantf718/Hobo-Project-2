@@ -3,6 +3,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -20,6 +21,8 @@ public class TCPServer {
 	private String[] answers;
     private int questionNum = 0;
     private String correctAnswer;
+
+    private HashMap<OutputStream, Integer> allScores = new HashMap<>();
 
     // Boolean to represent if a client has buzzed in. Set to TRUE once any client buzzes in before the rest. 
     // Used to send "ack" vs "negative-ack". Will reset upon new question
@@ -160,6 +163,7 @@ public class TCPServer {
                             if(receivedMessage.startsWith("USER ")){
                                 clientUsername = receivedMessage.substring(5); // Remove the USER tag
                                 System.out.println("Set username " + clientUsername + " for " + clientIP);
+                                allScores.put(outStream, 0); // initialize everyone's scores as 0 when they join
     
                             // Handle client buzzing in
                             } else if(receivedMessage.startsWith("buzz")){
@@ -205,19 +209,29 @@ public class TCPServer {
                                     System.out.println(receivedAnswer + " is correct!");
 
                                     // Award points here
-
+                                    String questionRight = "SCORE +" + 10 + " points\n";
+                                    clientSocket.getOutputStream().write((questionRight).getBytes("UTF-8"));
+                                    int currentScore = allScores.get(outStream) + 10; // updates the client's score within the server
+                                    allScores.put(outStream, currentScore);
                                 } else {
                                     // If incorrect
                                     System.out.println(receivedMessage + " is incorrect.");
 
                                     // Deduct points here
-
+                                    String questionWrong = "SCORE -" + 10 + " points\n";
+                                    clientSocket.getOutputStream().write((questionWrong).getBytes("UTF-8"));
+                                    int currentScore = allScores.get(outStream) - 10; // updates the client's score within the server
+                                    allScores.put(outStream, currentScore);
                                 }
 
                             // Handle next question signal
                             } else if(receivedMessage.startsWith("NEXT")){
                                 System.out.println("Received NEXT, calling nextQuestion");
                                 nextQuestion();
+                            } else if(receivedMessage.startsWith("SCORE ")){
+                                System.out.println("Received NO answer from user, adjusting score, calling nextQuestion");
+                                int currentScore = allScores.get(outStream) - 20;
+                                allScores.put(outStream, currentScore);
                             }
                         } 
                     } catch (EOFException | SocketException se) {

@@ -33,7 +33,9 @@ public class TCPClient implements ActionListener {
 	private JLabel questionLabel;
 	private JLabel timer;
     private Timer t;
-	private JLabel score;
+	private JLabel scoreLabel;
+    private JLabel totalScore;
+    private int clientScore = 0;
 	private TimerTask clock;
 	private JFrame window;
 
@@ -53,8 +55,8 @@ public class TCPClient implements ActionListener {
 
         // Destination IP: (must match server)
         // private final String DEST_IP = "localhost"; // <-- localhost (for testing purposes)
-        private final String DEST_IP = "10.111.134.82"; // <-- Grant's IP
-        // private final String DEST_IP = ""; // <-- Evan's IP
+        // private final String DEST_IP = "10.111.134.82"; // <-- Grant's IP
+        private final String DEST_IP = ""; // <-- Evan's IP
         // private final String DEST_IP = ""; // <-- Jessica's IP
 
     // ---------------------------------------- // 
@@ -183,8 +185,15 @@ public class TCPClient implements ActionListener {
                                         window.repaint();
                                     });
 
+                                    // Set the displayed score to the appropriate score
+                                } else if(receivedLine.startsWith("SCORE ")){
+                                    if(receivedLine.equals("SCORE -" + 10 + " points")){
+                                        clientScore -= 10;
+                                    } else if(receivedLine.equals("SCORE +" + 10 + " points")) {
+                                        clientScore += 10;
+                                    } 
 
-                                // Set incoming answers & display them on GUI
+                                    // Set incoming answers & display them on GUI
                                 } else if (receivedLine.startsWith("ANSWERS ")){
 
                                     // Set correct answer
@@ -290,9 +299,13 @@ public class TCPClient implements ActionListener {
 		}
 		
 		// Score
-		score = new JLabel("SCORE"); 
-		score.setBounds(50, 250, 100, 20);
-		window.add(score);
+		scoreLabel = new JLabel("SCORE"); 
+		scoreLabel.setBounds(40, 230, 100, 20);
+		window.add(scoreLabel);
+
+        totalScore = new JLabel("" + clientScore);
+        totalScore.setBounds(50, 250, 100, 20);
+        window.add(totalScore);
 
         // Poll
 		poll = new JButton("Poll"); 
@@ -427,7 +440,6 @@ public class TCPClient implements ActionListener {
 
 			// Second Phase (Answering Phase)
 			if(duration > 0 && secondPhase) {
-
                 // If you haven't already submitted an answer:
                 if(!submitted){
                     // Enable answer buttons & submit upon phase 2 only if you buzzed in first
@@ -444,6 +456,20 @@ public class TCPClient implements ActionListener {
 
             // Move on to next question
 			} else if(duration <= 0 && secondPhase) {
+                // update the client's score if they do not answer the question at all when they submit
+                if(!submitted){
+                    clientScore -= 20;
+                    totalScore.setText("" + clientScore);
+                    String noAnswer = "SCORE -" + 20;
+                    try {
+                        outStream.write(noAnswer.getBytes("UTF-8"));
+                    } catch (IOException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+                totalScore.setText("" + clientScore);
+
 				timer.setText("Timer expired");
 				window.repaint();
                 
