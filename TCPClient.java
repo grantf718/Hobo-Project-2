@@ -114,7 +114,10 @@ public class TCPClient implements ActionListener {
 
             // Create threads for client
             createReadThread();
-            createWriteThread();
+
+
+            // createWriteThread();
+
         } 
         catch (UnknownHostException u) {
             u.printStackTrace();
@@ -150,17 +153,23 @@ public class TCPClient implements ActionListener {
 
                                 // Handle correct answer
                                 if(receivedLine.startsWith("ack")){
-                                    // After polling phase, enable buttons 
                                     System.out.println("You were the first to buzz in!");
+                                    // Set ack to true for this client
                                     ack = true;
+                                    // Option buttons should become enabled when second phase starts
 
                                 // Handle incorrect answer
-                                } else if (receivedLine.startsWith("negative-ack")){
-                                    // Keep buttons disabled 
+                                } else if (receivedLine.startsWith("negative-ack")){ 
                                     System.out.println("You were not the first to buzz in.");
+                                    // Ack remains false
+                                    ack = false;
+                                    // Option buttons should stay disabled when second phase starts
 
                                 // Set incoming question & display it on GUI 
                                 } else if(receivedLine.startsWith("QUESTION ")){
+
+                                    // Reset tracker of whether client sumitted for next question
+                                    submitted = false;
 
                                     // Cancel any existing timer and timer task
                                     if(t != null) {
@@ -240,39 +249,39 @@ public class TCPClient implements ActionListener {
         readThread.start();
     }
 
-    public void createWriteThread() {
-        Thread writeThread = new Thread() {
-            public void run() {
-                while (socket.isConnected()) {
-                	try {
+    // public void createWriteThread() {
+    //     Thread writeThread = new Thread() {
+    //         public void run() {
+    //             while (socket.isConnected()) {
+    //             	try {
 
-                        // THIS IS THE ORIGINAL CODE TO ACCEPT A TYPED LINE FROM TERMINAL, 
-                        // WHICH IS NOT NEEDED BUT CONTAINS THE CODE TO WRITE TO SERVER.
-                        // ------------------------------------------------------------
-                        BufferedReader inputReader = new BufferedReader(new InputStreamReader(System.in));
-                        sleep(100);
-                        String typedMessage = inputReader.readLine();
-                        if (typedMessage != null && typedMessage.length() > 0) {
-                            synchronized (socket) {
-                                outStream.write(typedMessage.getBytes("UTF-8"));
-                            }
-                            sleep(100);
-                        }
-                        else {
-                        	notifyAll();
-                        }
+    //                     // THIS IS THE ORIGINAL CODE TO ACCEPT A TYPED LINE FROM TERMINAL, 
+    //                     // WHICH IS NOT NEEDED BUT CONTAINS THE CODE TO WRITE TO SERVER.
+    //                     // ------------------------------------------------------------
+    //                     BufferedReader inputReader = new BufferedReader(new InputStreamReader(System.in));
+    //                     sleep(100);
+    //                     String typedMessage = inputReader.readLine();
+    //                     if (typedMessage != null && typedMessage.length() > 0) {
+    //                         synchronized (socket) {
+    //                             outStream.write(typedMessage.getBytes("UTF-8"));
+    //                         }
+    //                         sleep(100);
+    //                     }
+    //                     else {
+    //                     	notifyAll();
+    //                     }
 
-                    } catch (IOException i) {
-                        i.printStackTrace();
-                    } catch (InterruptedException ie) {
-                        ie.printStackTrace();
-                    }
-                }
-            }
-        };
-        writeThread.setPriority(Thread.MAX_PRIORITY);
-        writeThread.start();
-    }
+    //                 } catch (IOException i) {
+    //                     i.printStackTrace();
+    //                 } catch (InterruptedException ie) {
+    //                     ie.printStackTrace();
+    //                 }
+    //             }
+    //         }
+    //     };
+    //     writeThread.setPriority(Thread.MAX_PRIORITY);
+    //     writeThread.start();
+    // }
 
     // Create GUI
     public void createGUI(){
@@ -414,6 +423,10 @@ public class TCPClient implements ActionListener {
         private int duration; 
 		private static boolean secondPhase = false;
 
+        public int getDuration(){
+            return duration;
+        }
+
 		public TimerCode(int duration) {
 			this.duration = duration;
 		}
@@ -464,7 +477,6 @@ public class TCPClient implements ActionListener {
                     try {
                         outStream.write(noAnswer.getBytes("UTF-8"));
                     } catch (IOException e) {
-                        // TODO Auto-generated catch block
                         e.printStackTrace();
                     }
                 }
