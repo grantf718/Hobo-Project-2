@@ -403,21 +403,29 @@ public class TCPClient implements ActionListener {
                 // Set current selection
                 currentSelection = answerChoices[0];
                 System.out.println("Current selection: " + currentSelection);
+                // Enable submit button
+                submit.setEnabled(true);
                 break;
 			case "Option 1":	
                 // Set current selection
                 currentSelection = answerChoices[1];
                 System.out.println("Current selection: " + currentSelection);
+                // Enable submit button
+                submit.setEnabled(true);
                 break;
 			case "Option 2":	
                 // Set current selection
                 currentSelection = answerChoices[2];
                 System.out.println("Current selection: " + currentSelection);
+                // Enable submit button
+                submit.setEnabled(true);
                 break;
 			case "Option 3":	
                 // Set current selection
                 currentSelection = answerChoices[3];
                 System.out.println("Current selection: " + currentSelection);
+                // Enable submit button
+                submit.setEnabled(true);
                 break;
 			case "Poll":		
                 // Send poll message 'buzz' to server
@@ -495,7 +503,7 @@ public class TCPClient implements ActionListener {
                         for(int i = 0; i < options.length; i++){
                             options[i].setEnabled(true);
                         }
-                        submit.setEnabled(true);
+                        // submit.setEnabled(true);
                     }
                 }
                 

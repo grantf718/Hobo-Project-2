@@ -205,24 +205,30 @@ public class TCPServer {
 
                                 // Determine if the client's answer is correct
                                 if(receivedAnswer.equals(correctAnswer)){
+                                    
                                     // If correct
                                     System.out.println(receivedAnswer + " is correct!");
 
-                                    // Award points here
+                                    // Updates list of client scores
+                                    int currentScore = allScores.get(outStream) + 10; 
+                                    allScores.put(outStream, currentScore);
+
+                                    // Notify client of score increase
                                     String questionRight = "SCORE +" + 10 + " points\n";
                                     clientSocket.getOutputStream().write((questionRight).getBytes("UTF-8"));
-                                    int currentScore = allScores.get(outStream) + 10; // updates the client's score within the server
-                                    allScores.put(outStream, currentScore);
-                                } else {
 
+                                } else {
+                                    
                                     // If incorrect
                                     System.out.println(receivedMessage + " is incorrect.");
 
-                                    // Deduct points here
+                                    // Update list of client scores
+                                    int currentScore = allScores.get(outStream) - 10; 
+                                    allScores.put(outStream, currentScore);
+
+                                    // Notify client of score decrease
                                     String questionWrong = "SCORE -" + 10 + " points\n";
                                     clientSocket.getOutputStream().write((questionWrong).getBytes("UTF-8"));
-                                    int currentScore = allScores.get(outStream) - 10; // updates the client's score within the server
-                                    allScores.put(outStream, currentScore);
                                 }
 
                             // Handle next question signal
