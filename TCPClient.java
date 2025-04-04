@@ -184,18 +184,17 @@ public class TCPClient implements ActionListener {
                                     t = new Timer();
                                     clock = new TimerCode(15);
                                     t.schedule(clock, 0, 1000);
-
-                                    // // Start timer
-                                    // t.schedule(clock, 0, 1000); // clock is called every second
                                     
-                                    currentQuestion = receivedLine.substring(9); // Remove QUESTION tag
+                                    // Remove QUESTION tag
+                                    currentQuestion = receivedLine.substring(9); 
 
-                                    // DEBUG: Print current question
+                                    // Print current question
                                     System.out.println("Current question set to: " + currentQuestion);
 
                                     // Update question label on the Event Dispatch Thread
                                     SwingUtilities.invokeLater(() -> {
-                                        questionLabel.setText(currentQuestion);
+                                        // Add html tags for line wrapping 
+                                        questionLabel.setText("<html>" + currentQuestion + "</html>");
                                         window.repaint();
                                     });
 

@@ -214,6 +214,7 @@ public class TCPServer {
                                     int currentScore = allScores.get(outStream) + 10; // updates the client's score within the server
                                     allScores.put(outStream, currentScore);
                                 } else {
+
                                     // If incorrect
                                     System.out.println(receivedMessage + " is incorrect.");
 
