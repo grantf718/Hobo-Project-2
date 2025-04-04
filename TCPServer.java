@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 
@@ -235,7 +236,10 @@ public class TCPServer {
                             } else if(receivedMessage.startsWith("NEXT")){
                                 System.out.println("Received NEXT, calling nextQuestion");
                                 nextQuestion();
+
+                            // Handle score update (when client who polled doesn't submit an answer)
                             } else if(receivedMessage.startsWith("SCORE ")){
+                                
                                 System.out.println("Received NO answer from user, adjusting score, calling nextQuestion");
                                 int currentScore = allScores.get(outStream) - 20;
                                 allScores.put(outStream, currentScore);
@@ -259,11 +263,23 @@ public class TCPServer {
         
         // Check if there are no questions left
         if (questionNum >= questions.length) {
-            System.out.println("No more questions available.");
+            // End the game
+
+            // Print game over message
+            System.out.println("\nGAME OVER! (No more questions)"); 
+            
+            // Convert the HashMap with scores to a list
+            List<Map.Entry<OutputStream, Integer>> entries = new ArrayList<>(allScores.entrySet());
+
+            // Sort the list in descending order by score
+            entries.sort((e1, e2) -> e2.getValue().compareTo(e1.getValue()));
+
+            // Print the sorted scores
+            for (Map.Entry<OutputStream, Integer> entry : entries) {
+                System.out.println("Score for " + entry.getKey() + " : " + entry.getValue());
+            }
+            
             return;
-            // . . . . . . . . . . . . .
-            // . Code to end game here .
-            // . . . . . . . . . . . . .
         }
 
         // Increment question number

@@ -48,6 +48,7 @@ public class TCPClient implements ActionListener {
     private String correctAnswer;
     private boolean ack = false;
     private boolean submitted = false;
+    private boolean polled = false;
 
     // ---------------------------------------- // 
     //            Destination Socket:           //
@@ -117,9 +118,6 @@ public class TCPClient implements ActionListener {
             // Create threads for client
             createReadThread();
 
-
-            // createWriteThread();
-
         } 
         catch (UnknownHostException u) {
             u.printStackTrace();
@@ -173,6 +171,7 @@ public class TCPClient implements ActionListener {
 
                                     // Reset tracker of whether client sumitted for next question
                                     submitted = false;
+                                    polled = false;
 
                                     // Cancel any existing timer and timer task
                                     if(t != null) {
@@ -330,7 +329,7 @@ public class TCPClient implements ActionListener {
         // Timer
 		timer = new JLabel("TIMER");  
 		timer.setBounds(250, 250, 100, 20);
-		clock = new TimerCode(15); 
+		clock = new TimerCode(30); 
 		t = new Timer(); 
 		window.add(timer);
 
@@ -391,7 +390,10 @@ public class TCPClient implements ActionListener {
                 // Enable submit button
                 submit.setEnabled(true);
                 break;
-			case "Poll":		
+			case "Poll":	
+            
+                polled = true;
+            
                 // Send poll message 'buzz' to server
                 try {
                     String buzz = "buzz";
@@ -476,9 +478,11 @@ public class TCPClient implements ActionListener {
 
             // Move on to next question
 			} else if(duration <= 0 && secondPhase) {
-                // update the client's score if they do not answer the question at all when they submit
-                if(!submitted){
+                // Check if client polled but didn't submit an answer
+                if(!submitted && polled){
+                    // Deduct 20 point 
                     clientScore -= 20;
+                    // Send score update msg to server
                     totalScore.setText("" + clientScore);
                     String noAnswer = "SCORE -" + 20;
                     try {
@@ -500,7 +504,7 @@ public class TCPClient implements ActionListener {
                 }
 
 				// Reset to the first phase for the next question
-				duration = 15;
+				duration = 15; 
 				secondPhase = false;
 
                 // Reset ack
