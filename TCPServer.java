@@ -254,37 +254,6 @@ public class TCPServer {
         readThread.start();
     }
 
-    //write thread using anonymous class
-    // public void createWriteThread() {
-
-    //     // Capture the current socket and stream in local variables to be used only by each client's unique thread
-    //     final Socket clientSocket = socket;
-    //     final InputStream clientInStream = inStream;
-
-    //     // Store client's IP for easy access 
-    //     final String clientIP = clientSocket.getInetAddress().toString();
-
-    //     Thread writeThread = new Thread() {
-
-    //         public void run() {
-    //         	//check socket connectivity
-    //             while (socket.isConnected()) {
-    //                 try {
-
-    //                     // Code to write here
-                        
-    //                 } catch (IOException i) {
-    //                     i.printStackTrace();
-    //                 } catch (InterruptedException ie) {
-    //                     ie.printStackTrace();
-    //                 } 
-    //            }
-    //         }
-    //     };
-    //     writeThread.setPriority(Thread.MAX_PRIORITY);
-    //     writeThread.start();
-    // }
-
     // Moves to the next question
     public void nextQuestion(){
         
@@ -321,11 +290,6 @@ public class TCPServer {
                 String fullMessage = question + "\n" + currentAnswers + "\n";
                 outStream.write(fullMessage.getBytes("UTF-8"));
 
-                // outStream.write((question + "\n").getBytes("UTF-8"));
-                // outStream.flush();
-                // // Send answers
-                // outStream.write(currentAnswers.getBytes("UTF-8"));
-                // outStream.flush();
             } catch (IOException e) {
                 e.printStackTrace();
             }

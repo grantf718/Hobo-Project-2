@@ -24,7 +24,6 @@ import javax.swing.SwingUtilities;
 public class TCPClient implements ActionListener {
 
     private Socket socket = null;
-    private InputStream inStream = null;
     private OutputStream outStream = null;
 
     private String clientUsername;
@@ -105,8 +104,7 @@ public class TCPClient implements ActionListener {
     // Create client socket
     public void createSocket() {
         try {
-        	// Fetch streams
-            inStream = socket.getInputStream();
+        	// Fetch output stream
             outStream = socket.getOutputStream();
 
             // Send server the client's username upon socket creation
@@ -283,40 +281,6 @@ public class TCPClient implements ActionListener {
         readThread.setPriority(Thread.MAX_PRIORITY);
         readThread.start();
     }
-
-    // public void createWriteThread() {
-    //     Thread writeThread = new Thread() {
-    //         public void run() {
-    //             while (socket.isConnected()) {
-    //             	try {
-
-    //                     // THIS IS THE ORIGINAL CODE TO ACCEPT A TYPED LINE FROM TERMINAL, 
-    //                     // WHICH IS NOT NEEDED BUT CONTAINS THE CODE TO WRITE TO SERVER.
-    //                     // ------------------------------------------------------------
-    //                     BufferedReader inputReader = new BufferedReader(new InputStreamReader(System.in));
-    //                     sleep(100);
-    //                     String typedMessage = inputReader.readLine();
-    //                     if (typedMessage != null && typedMessage.length() > 0) {
-    //                         synchronized (socket) {
-    //                             outStream.write(typedMessage.getBytes("UTF-8"));
-    //                         }
-    //                         sleep(100);
-    //                     }
-    //                     else {
-    //                     	notifyAll();
-    //                     }
-
-    //                 } catch (IOException i) {
-    //                     i.printStackTrace();
-    //                 } catch (InterruptedException ie) {
-    //                     ie.printStackTrace();
-    //                 }
-    //             }
-    //         }
-    //     };
-    //     writeThread.setPriority(Thread.MAX_PRIORITY);
-    //     writeThread.start();
-    // }
 
     // Create GUI
     public void createGUI(){
