@@ -4,6 +4,10 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.security.SecureRandom;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.awt.event.ActionEvent;
@@ -165,8 +169,9 @@ public class TCPClient implements ActionListener {
                                     ack = false;
                                     // Option buttons should stay disabled when second phase starts
 
-                                // Set incoming question & display it on GUI 
+                                // Handle question
                                 } else if(receivedLine.startsWith("QUESTION ")){
+                                    // Set incoming question & display it on GUI 
 
                                     // Reset tracker of whether client sumitted for next question
                                     submitted = false;
@@ -194,16 +199,18 @@ public class TCPClient implements ActionListener {
                                         window.repaint();
                                     });
 
-                                    // Set the displayed score to the appropriate score
+                                // Handle score
                                 } else if(receivedLine.startsWith("SCORE ")){
+                                    // Set the displayed score to the appropriate score
                                     if(receivedLine.equals("SCORE -" + 10 + " points")){
                                         clientScore -= 10;
                                     } else if(receivedLine.equals("SCORE +" + 10 + " points")) {
                                         clientScore += 10;
                                     } 
 
-                                    // Set incoming answers & display them on GUI
+                                // Handle answer choices 
                                 } else if (receivedLine.startsWith("ANSWERS ")){
+                                    // Set incoming answers & display them on GUI
 
                                     // Set correct answer
                                     correctAnswer = receivedLine.substring(8, receivedLine.indexOf(','));
@@ -211,16 +218,45 @@ public class TCPClient implements ActionListener {
                                     // Set answer choices
                                     String parts[] = receivedLine.substring(8).split(", ");
 
-                                    for (int i = 0; i < 4; i++) {
-                                        answerChoices[i] = parts[i];
+                                    // OLD (Not randomized answer choices)
+                                    // for (int i = 0; i < 4; i++) {
+                                    //     answerChoices[i] = parts[i];
+                                    // }
+
+                                    // // DEBUG: Print out correct answer and answer choices
+                                    // System.out.println("Correct answer set to: " + correctAnswer);
+                                    // System.out.println("Answer choice 1 set to: " + answerChoices[0]);
+                                    // System.out.println("Answer choice 2 set to: " + answerChoices[1]);
+                                    // System.out.println("Answer choice 3 set to: " + answerChoices[2]);
+                                    // System.out.println("Answer choice 4 set to: " + answerChoices[3]);
+
+                                    // The first item is the correct answer
+                                    correctAnswer = parts[0];
+
+                                    // Create a list of pairs (answer text, isCorrect)
+                                    List<AbstractMap.SimpleEntry<String, Boolean>> choicesList = new ArrayList<>();
+                                    for (int i = 0; i < parts.length; i++) {
+                                        boolean isCorrect = (i == 0);
+                                        choicesList.add(new AbstractMap.SimpleEntry<>(parts[i], isCorrect));
+                                    }
+
+                                    // Shuffle the choices
+                                    Collections.shuffle(choicesList);
+
+                                    // Update answerChoices[] and remember the new correctAnswer
+                                    for (int i = 0; i < choicesList.size(); i++) {
+                                        answerChoices[i] = choicesList.get(i).getKey();
+                                        if (choicesList.get(i).getValue()) {
+                                            correctAnswer = choicesList.get(i).getKey(); // Update correctAnswer to the shuffled version
+                                        }
                                     }
 
                                     // DEBUG: Print out correct answer and answer choices
                                     System.out.println("Correct answer set to: " + correctAnswer);
-                                    System.out.println("Answer choice 1 set to: " + answerChoices[0]);
-                                    System.out.println("Answer choice 2 set to: " + answerChoices[1]);
-                                    System.out.println("Answer choice 3 set to: " + answerChoices[2]);
-                                    System.out.println("Answer choice 4 set to: " + answerChoices[3]);
+                                    for (int i = 0; i < answerChoices.length; i++) {
+                                        System.out.println("Answer choice " + (i + 1) + " set to: " + answerChoices[i]);
+                                    }
+
 
                                     // Update GUI buttons accordingly on the Event Dispatch Thread
                                     SwingUtilities.invokeLater(() -> {
