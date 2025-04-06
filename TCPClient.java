@@ -12,7 +12,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -38,9 +37,14 @@ public class TCPClient implements ActionListener {
     private Timer t;
 	private JLabel scoreLabel;
     private JLabel totalScore;
+    
+    //current player
+    private JLabel currentPlayerLabel;
+
     private int clientScore = 0;
 	private TimerTask clock;
 	private JFrame window;
+    
 
     private String currentQuestion;
     private String[] answerChoices = new String[4];
@@ -262,6 +266,18 @@ public class TCPClient implements ActionListener {
                                         window.repaint();
                                     });                                    
                                 }
+                                else if (receivedLine.startsWith("CURRENT_PLAYER")) {
+                                    String playerName = receivedLine.substring("CURRENT_PLAYER".length()).trim();
+                                    
+                                    SwingUtilities.invokeLater(() -> {
+                                        if (playerName.equalsIgnoreCase("None") || playerName.isEmpty()) {
+                                            currentPlayerLabel.setText("Current Player: ");
+                                        } else {
+                                            currentPlayerLabel.setText("Current Player: " + playerName);
+                                        }
+                                    });
+                                }
+                                
                             }
                         // }
                         // else {
@@ -314,6 +330,11 @@ public class TCPClient implements ActionListener {
         totalScore.setBounds(50, 250, 100, 20);
         window.add(totalScore);
 
+        //current user
+        currentPlayerLabel = new JLabel("Waiting for a player to buzz in...");
+        currentPlayerLabel.setBounds(10, 270, 300, 20);
+        window.add(currentPlayerLabel);
+
         // Poll
 		poll = new JButton("Poll"); 
 		poll.setBounds(10, 300, 100, 20);
@@ -339,7 +360,6 @@ public class TCPClient implements ActionListener {
 		window.setVisible(true);
 		window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		window.setResizable(false);
-
     }
 
     // Getter for ack

@@ -8,6 +8,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.swing.*;
+import java.awt.*;
 
 
 public class TCPServer {
@@ -32,6 +34,10 @@ public class TCPServer {
     // Set to represent all clients that have buzzed in for the current question. Gets cleared for next question
     private Set<String> buzzedClients = new HashSet<>();
 
+    // GUI components for displaying the current answering user
+    private JFrame frame;
+    private JPanel panel;
+    private JLabel currentUserLabel;
 
     // ---------------------------------------- // 
     //              Server Port:                //
@@ -71,6 +77,21 @@ public class TCPServer {
         catch (IOException e) {
 			e.printStackTrace();
 		}
+
+        // GUI Setup
+    frame = new JFrame("Current Answering User");
+    panel = new JPanel();
+    panel.setLayout(new BorderLayout());
+    currentUserLabel = new JLabel("Current User: None", JLabel.CENTER);
+    currentUserLabel.setOpaque(true);
+    currentUserLabel.setBackground(Color.WHITE);
+    currentUserLabel.setFont(new Font("Arial", Font.BOLD, 16));
+    panel.add(currentUserLabel, BorderLayout.CENTER);
+    frame.add(panel);
+    frame.setSize(300, 100);
+    frame.setLocationRelativeTo(null);
+    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    frame.setVisible(true);
 
     }
 
@@ -209,6 +230,8 @@ public class TCPServer {
                                     
                                     // If correct
                                     System.out.println(receivedAnswer + " is correct!");
+                                    updateCurrentUserLabel(clientUsername);
+
 
                                     // Updates list of client scores
                                     int currentScore = allScores.get(outStream) + 10; 
@@ -304,6 +327,13 @@ public class TCPServer {
         // Clear the set of buzzed in clients
         buzzedClients.clear();
 
+        //setting the current user
+        SwingUtilities.invokeLater(() -> {
+            currentUserLabel.setText("Current User: None");
+            currentUserLabel.setBackground(Color.WHITE);
+        });
+        
+
         // Get new Q&A from array, tag both strings 
         String question = "QUESTION Q" + questionNum + ". " + questions[questionNum-1]; 
         String currentAnswers = "ANSWERS " + answers[questionNum-1];
@@ -324,7 +354,17 @@ public class TCPServer {
         // Reset firstClient to false 
         firstClient = false;
         
+        
     }
+
+    // Updates the current user label with green background
+    public void updateCurrentUserLabel(String username) {
+    SwingUtilities.invokeLater(() -> {
+        currentUserLabel.setText("Current User: " + username);
+        currentUserLabel.setBackground(Color.GREEN);
+        });
+    }
+
 
     // Function to read in a text file containing 20 questions or answers separated by line
     public static String[] readFile(String filePath){
