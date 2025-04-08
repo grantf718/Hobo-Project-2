@@ -1,4 +1,3 @@
-import java.awt.Color;
 import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
@@ -12,13 +11,9 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import javax.swing.ButtonGroup;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JRadioButton;
-import javax.swing.SwingUtilities;
+
+import javax.swing.*;
+import java.awt.*;
 
 public class TCPClient implements ActionListener {
 
@@ -54,18 +49,23 @@ public class TCPClient implements ActionListener {
     private boolean submitted = false;
     private boolean polled = false;
 
+     // GUI components for displaying the current answering user
+    private JFrame frame;
+    private JPanel panel;
+    private JLabel currentUserLabel;
+
     // ---------------------------------------- // 
     //            Destination Socket:           //
     // ---------------------------------------- // 
         
-        // Destination port: (must match server)
+    // Destination port: (must match server)
         private final int DEST_PORT = 1234;
 
-        // Destination IP: (must match server)
-        // private final String DEST_IP = "localhost"; // <-- localhost (for testing purposes)
-        // private final String DEST_IP = "10.111.134.82"; // <-- Grant's IP
+    // Destination IP: (must match server)
+    // private final String DEST_IP = "localhost"; // <-- localhost (for testing purposes)
+    // private final String DEST_IP = "10.111.134.82"; // <-- Grant's IP
         private final String DEST_IP = ""; // <-- Evan's IP
-        // private final String DEST_IP = ""; // <-- Jessica's IP
+    // private final String DEST_IP = ""; // <-- Jessica's IP
 
     // ---------------------------------------- // 
 
@@ -104,6 +104,11 @@ public class TCPClient implements ActionListener {
         poll.setEnabled(false);
         submit.setEnabled(false);
 
+ // GUI Setup    
+
+    currentUserLabel = new JLabel(""); // Start with blank
+	window.add(currentUserLabel);
+	currentUserLabel.setBounds(10, 5, 350, 50);;
     }
 
     // Create client socket
@@ -167,6 +172,7 @@ public class TCPClient implements ActionListener {
                                     System.out.println("You were not the first to buzz in.");
                                     // Ack remains false
                                     ack = false;
+                                    updateCurrentUserLabel(clientUsername);
                                     // Option buttons should stay disabled when second phase starts
 
                                 // Handle question
@@ -268,14 +274,7 @@ public class TCPClient implements ActionListener {
                                 }
                                 else if (receivedLine.startsWith("CURRENT_PLAYER")) {
                                     String playerName = receivedLine.substring("CURRENT_PLAYER".length()).trim();
-                                    
-                                    SwingUtilities.invokeLater(() -> {
-                                        if (playerName.equalsIgnoreCase("None") || playerName.isEmpty()) {
-                                            currentPlayerLabel.setText("Current Player: ");
-                                        } else {
-                                            currentPlayerLabel.setText("Current Player: " + playerName);
-                                        }
-                                    });
+                                    updateCurrentUserLabel(playerName); 
                                 }
                                 
                             }
@@ -445,6 +444,18 @@ public class TCPClient implements ActionListener {
 		}
 	}
 
+    // Updates the current user label
+    public void updateCurrentUserLabel(String username) {
+        SwingUtilities.invokeLater(() -> {
+            if (username == null || username.isEmpty()) {
+                currentUserLabel.setText("Waiting for a player to buzz in...");
+            } else {
+                currentUserLabel.setText("Current Answering User: " + username);
+            }
+        });
+    }
+    
+    
 
     // Runs the timer 
 	public class TimerCode extends TimerTask {
@@ -462,7 +473,7 @@ public class TCPClient implements ActionListener {
 
 		@Override
 		public void run() {
-
+        
 			// First Phase (Polling Phase)
 			if(duration > 0 && !secondPhase) {
 				// Disable options
@@ -523,12 +534,19 @@ public class TCPClient implements ActionListener {
                     e.printStackTrace();
                 }
 
+                // Clear current answering user before next round
+                SwingUtilities.invokeLater(() -> {
+                    currentUserLabel.setText("");
+                });
+
+
 				// Reset to the first phase for the next question
 				duration = 15; 
 				secondPhase = false;
 
                 // Reset ack
                 setAck(false);
+                
 
                 // Clear selections from any buttons
                 optionGroup.clearSelection();

@@ -34,10 +34,10 @@ public class TCPServer {
     // Set to represent all clients that have buzzed in for the current question. Gets cleared for next question
     private Set<String> buzzedClients = new HashSet<>();
 
-    // GUI components for displaying the current answering user
-    private JFrame frame;
-    private JPanel panel;
-    private JLabel currentUserLabel;
+    // // GUI components for displaying the current answering user
+    // private JFrame frame;
+    // private JPanel panel;
+    // private JLabel currentUserLabel;
 
     // ---------------------------------------- // 
     //              Server Port:                //
@@ -78,20 +78,20 @@ public class TCPServer {
 			e.printStackTrace();
 		}
 
-        // GUI Setup
-    frame = new JFrame("Current Answering User");
-    panel = new JPanel();
-    panel.setLayout(new BorderLayout());
-    currentUserLabel = new JLabel("Current User: None", JLabel.CENTER);
-    currentUserLabel.setOpaque(true);
-    currentUserLabel.setBackground(Color.WHITE);
-    currentUserLabel.setFont(new Font("Arial", Font.BOLD, 16));
-    panel.add(currentUserLabel, BorderLayout.CENTER);
-    frame.add(panel);
-    frame.setSize(300, 100);
-    frame.setLocationRelativeTo(null);
-    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-    frame.setVisible(true);
+    //     // GUI Setup
+    // frame = new JFrame("Current Answering User");
+    // panel = new JPanel();
+    // panel.setLayout(new BorderLayout());
+    // currentUserLabel = new JLabel("Current User: None", JLabel.CENTER);
+    // currentUserLabel.setOpaque(true);
+    // currentUserLabel.setBackground(Color.WHITE);
+    // currentUserLabel.setFont(new Font("Arial", Font.BOLD, 16));
+    // panel.add(currentUserLabel, BorderLayout.CENTER);
+    // frame.add(panel);
+    // frame.setSize(300, 100);
+    // frame.setLocationRelativeTo(null);
+    // frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    // frame.setVisible(true);
 
     }
 
@@ -208,6 +208,16 @@ public class TCPServer {
                                     clientSocket.getOutputStream().write(response.getBytes("UTF-8"));
                                     // Print
                                     System.out.println(clientUsername + " (" + clientIP + ") was the first to buzz in! (Sent \"ack\")");
+                                    // Notify all clients who the current player is
+                                    String currentPlayerMessage = "CURRENT_PLAYER " + clientUsername + "\n";
+                                    for (OutputStream out : clientOutputs) {
+                                        out.write(currentPlayerMessage.getBytes("UTF-8"));
+                                    }
+
+                                    for (OutputStream out : clientOutputs) {
+                                        out.write(currentPlayerMessage.getBytes("UTF-8"));
+                                    }
+
                                 } else { // <-- This client was not first to buzz in
                                     // Send "negative-ack" to client
                                     String response = "negative-ack\n";
@@ -230,7 +240,7 @@ public class TCPServer {
                                     
                                     // If correct
                                     System.out.println(receivedAnswer + " is correct!");
-                                    updateCurrentUserLabel(clientUsername);
+                                    // updateCurrentUserLabel(clientUsername);
 
 
                                     // Updates list of client scores
@@ -327,11 +337,11 @@ public class TCPServer {
         // Clear the set of buzzed in clients
         buzzedClients.clear();
 
-        //setting the current user
-        SwingUtilities.invokeLater(() -> {
-            currentUserLabel.setText("Current User: None");
-            currentUserLabel.setBackground(Color.WHITE);
-        });
+        // //setting the current user
+        // SwingUtilities.invokeLater(() -> {
+        //     currentUserLabel.setText("Current User: None");
+        //     currentUserLabel.setBackground(Color.WHITE);
+        // });
         
 
         // Get new Q&A from array, tag both strings 
@@ -357,13 +367,13 @@ public class TCPServer {
         
     }
 
-    // Updates the current user label with green background
-    public void updateCurrentUserLabel(String username) {
-    SwingUtilities.invokeLater(() -> {
-        currentUserLabel.setText("Current User: " + username);
-        currentUserLabel.setBackground(Color.GREEN);
-        });
-    }
+    // // Updates the current user label with green background
+    // public void updateCurrentUserLabel(String username) {
+    // SwingUtilities.invokeLater(() -> {
+    //     currentUserLabel.setText("Current User: " + username);
+    //     currentUserLabel.setBackground(Color.GREEN);
+    //     });
+    // }
 
 
     // Function to read in a text file containing 20 questions or answers separated by line
