@@ -444,18 +444,19 @@ public class TCPClient implements ActionListener {
 		}
 	}
 
-    // Updates the current user label
     public void updateCurrentUserLabel(String username) {
         SwingUtilities.invokeLater(() -> {
             if (username == null || username.isEmpty()) {
                 currentUserLabel.setText("Waiting for a player to buzz in...");
+                currentUserLabel.setForeground(Color.BLACK);
+                currentUserLabel.setBackground(window.getBackground()); // match the panel bg to hide highlight
             } else {
-                currentUserLabel.setText("Current Answering User: " + username);
+                currentUserLabel.setText("User Currently Answering: " + username);
+                currentUserLabel.setForeground(new Color(139, 0, 139)); // dark pink 
             }
         });
     }
-    
-    
+
 
     // Runs the timer 
 	public class TimerCode extends TimerTask {
