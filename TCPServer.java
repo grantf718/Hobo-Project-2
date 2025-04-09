@@ -1,4 +1,3 @@
-
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -247,20 +246,10 @@ public class TCPServer {
                             }
                         } 
                     } catch (EOFException | SocketException se) {
-                        System.out.println("Client " + clientIP + " disconnected.");
-                        try {
-                            inStream.close();
-                            socket.close(); // Close the socket too
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                        break; // Exit the thread loop
-                    } catch (UnsupportedEncodingException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                    } catch (IOException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
+                        se.printStackTrace();
+                    } catch (IOException i) {
+                        i.printStackTrace();
+                        System.out.println("IOException while reading from " + clientSocket.getInetAddress() + ": " + i.getMessage());
                     } 
                 }
             }
