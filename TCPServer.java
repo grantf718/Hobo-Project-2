@@ -123,6 +123,16 @@ public class TCPServer {
                                 outStream.write(typedMessage.getBytes("UTF-8"));
                             }
                         }
+
+                        // Add inside terminalThread.run()
+                        if (typedMessage.equals("end")) {
+                            System.out.println("Ending game for all clients...");
+                            for (OutputStream out : clientOutputs) {
+                                out.write("END\n".getBytes("UTF-8"));
+                            }
+                            System.exit(0); // optional: shut down server after notifying clients
+                        }
+
     
                     } catch (IOException e) {
                         e.printStackTrace();
