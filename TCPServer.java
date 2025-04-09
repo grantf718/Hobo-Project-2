@@ -181,11 +181,11 @@ public class TCPServer {
                     int len = clientIn.read(buffer);
                     if (len == -1) {
                         // clean disconnect
-                        System.out.println("Client " + clientIP + " disconnected.");
+                        System.out.println(clientUsername + " disconnected.");
                         break;
                     }
                     String msg = new String(buffer, 0, len, "UTF-8").trim();
-                    System.out.println("From " + clientIP + ": " + msg);
+                    System.out.println("From " + clientUsername + ": " + msg);
 
                     // --- handle USER ---
                     if (msg.startsWith("USER ")) {
@@ -235,7 +235,7 @@ public class TCPServer {
                     }
                 }
             } catch (SocketException se) {
-                System.out.println("Connection reset by " + clientIP);
+                System.out.println("Connection reset by " + clientUsername);
             } catch (IOException ioe) {
                 ioe.printStackTrace();
             } finally {
