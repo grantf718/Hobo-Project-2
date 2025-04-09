@@ -32,11 +32,15 @@ public class TCPServer {
     // Set to represent all clients that have buzzed in for the current question. Gets cleared for next question
     private Set<String> buzzedClients = new HashSet<>();
 
+    // new
+    private Socket targetClientSocket = null;  // The only client allowed to trigger NEXT
+    private final Object targetLock = new Object(); // Lock to protect targetClientSocket
+    private final Map<Socket, OutputStream> socketOutputMap = new HashMap<>();
 
     // ---------------------------------------- // 
     //              Server Port:                //
     // ---------------------------------------- // 
-    private final int SERVER_PORT = 1234;
+        private final int SERVER_PORT = 1234;
     // ---------------------------------------- // 
 
 
@@ -89,7 +93,20 @@ public class TCPServer {
                 outStream = socket.getOutputStream();
                 // Store output stream of client
                 clientOutputs.add(outStream); 
+
+                // new
+                socketOutputMap.put(socket, outStream);
+
                 System.out.println("Client " + socket.getInetAddress() + " has connected");
+
+                // new
+                synchronized (targetLock) {
+                    if (targetClientSocket == null || targetClientSocket.isClosed()) {
+                        targetClientSocket = socket;
+                        System.out.println("Assigned target client: " + socket.getInetAddress());
+                    }
+                }                
+
                 // Create a new threads
                 createReadThread();
                 // createWriteThread();
@@ -236,8 +253,19 @@ public class TCPServer {
 
                             // Handle next question signal
                             } else if(receivedMessage.startsWith("NEXT")){
-                                System.out.println("Received NEXT, calling nextQuestion");
-                                nextQuestion();
+                                // System.out.println("Received NEXT, calling nextQuestion");
+                                // nextQuestion();
+
+                                // new
+                                synchronized (targetLock) {
+                                    if (clientSocket.equals(targetClientSocket)) {
+                                        System.out.println("Target client requested NEXT. Proceeding.");
+                                        nextQuestion();
+                                    } else {
+                                        System.out.println("Non-target client attempted NEXT. Ignored.");
+                                    }
+                                }
+                            
 
                             // Handle score update (when client who polled doesn't submit an answer)
                             } else if(receivedMessage.startsWith("SCORE ")){
@@ -249,6 +277,33 @@ public class TCPServer {
                         } 
                     } catch (EOFException | SocketException se) {
                         System.out.println("Client " + clientIP + " disconnected.");
+
+                        // new
+                        clientOutputs.remove(outStream);
+                        socketOutputMap.remove(clientSocket);
+                        allScores.remove(outStream);                        
+
+                        // new
+                        synchronized (targetLock) {
+                            if (clientSocket.equals(targetClientSocket)) {
+                                System.out.println("Target client disconnected. Reassigning...");
+                                targetClientSocket = null;
+                            
+                                for (Socket s : socketOutputMap.keySet()) {
+                                    if (!s.isClosed()) {
+                                        targetClientSocket = s;
+                                        System.out.println("New target client assigned: " + s.getInetAddress());
+                                        break;
+                                    }
+                                }
+                            
+                                if (targetClientSocket == null) {
+                                    System.out.println("No clients left to assign.");
+                                }
+                            }
+                        }
+                        
+
                         try {
                             inStream.close();
                             socket.close(); // Close the socket too
@@ -257,10 +312,8 @@ public class TCPServer {
                         }
                         break; // Exit the thread loop
                     } catch (UnsupportedEncodingException e) {
-                        // TODO Auto-generated catch block
                         e.printStackTrace();
                     } catch (IOException e) {
-                        // TODO Auto-generated catch block
                         e.printStackTrace();
                     }
                 }
@@ -270,6 +323,7 @@ public class TCPServer {
         readThread.setPriority(Thread.MAX_PRIORITY);
         readThread.start();
     }
+
     // Moves to the next question
     public void nextQuestion(){
         
