@@ -459,7 +459,7 @@ public class TCPClient implements ActionListener {
                 currentUserLabel.setForeground(Color.BLACK);
                 currentUserLabel.setBackground(window.getBackground()); // match the panel bg to hide highlight
             } else {
-                currentUserLabel.setText("User Currently Answering: " + username);
+                currentUserLabel.setText("Buzzed in First: " + username);
                 currentUserLabel.setForeground(new Color(139, 0, 139)); // dark pink 
             }
         });
