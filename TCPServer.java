@@ -25,6 +25,9 @@ public class TCPServer {
 
     private HashMap<OutputStream, Integer> allScores = new HashMap<>();
 
+    private Map<OutputStream, String> clientNames = new HashMap<>();
+
+
     // Boolean to represent if a client has buzzed in. Set to TRUE once any client buzzes in before the rest. 
     // Used to send "ack" vs "negative-ack". Will reset upon new question
     private boolean firstClient = false; 
@@ -178,7 +181,7 @@ public class TCPServer {
                                 clientUsername = receivedMessage.substring(5); // Remove the USER tag
                                 System.out.println("Set username " + clientUsername + " for " + clientIP);
                                 allScores.put(outStream, 0); // initialize everyone's scores as 0 when they join
-    
+                                clientNames.put(outStream, clientUsername); 
                             // Handle client buzzing in
                             } else if(receivedMessage.startsWith("buzz")){
     
@@ -309,11 +312,18 @@ public class TCPServer {
             // Sort the list in descending order by score
             entries.sort((e1, e2) -> e2.getValue().compareTo(e1.getValue()));
 
+            if (!entries.isEmpty()) {
+                String winner = clientNames.getOrDefault(entries.get(0).getKey(), "Unknown");
+                int score = entries.get(0).getValue();
+                System.out.println("Winner: " + winner + " with " + score + " points!\n");
+            }        
+
             // Print the sorted scores
+            System.out.println("\nFinal Scores:");
             for (Map.Entry<OutputStream, Integer> entry : entries) {
-                System.out.println("Score for " + entry.getKey() + " : " + entry.getValue());
+                String name = clientNames.getOrDefault(entry.getKey(), "Unknown");
+                System.out.println(name + " : " + entry.getValue() + " points");
             }
-            
             return;
         }
 
