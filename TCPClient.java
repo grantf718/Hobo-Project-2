@@ -58,7 +58,7 @@ public class TCPClient implements ActionListener {
         private final int DEST_PORT = 1234;
 
         // Destination IP: (must match server)
-        private final String DEST_IP = ""; // <-- Grant's IP 10.111.134.82 
+        private final String DEST_IP = "10.111.134.82"; // <-- Grant's IP 10.111.134.82 
 
     // ---------------------------------------- // 
 
