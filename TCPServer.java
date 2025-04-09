@@ -72,6 +72,8 @@ public class TCPServer {
 			e.printStackTrace();
 		}
 
+        createTerminalThread();
+
     }
 
     // Accept client connections
@@ -91,7 +93,6 @@ public class TCPServer {
                 // Create a new threads
                 createReadThread();
                 // createWriteThread();
-                createTerminalThread();
             }
         }
         catch (IOException io) {
@@ -111,6 +112,7 @@ public class TCPServer {
     
                         // Type 'start' to begin the game 
                         if (typedMessage.equals("start") && questionNum == 0) { 
+                            System.out.println("Starting");
                             nextQuestion();
                         }
     
