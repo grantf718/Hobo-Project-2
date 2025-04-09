@@ -58,7 +58,7 @@ public class TCPClient implements ActionListener {
         private final int DEST_PORT = 1234;
 
         // Destination IP: (must match server)
-        private final String DEST_IP = ""; // <-- Grant's IP 10.111.134.82
+        private final String DEST_IP = "10.111.134.82"; // <-- Grant's IP 
 
     // ---------------------------------------- // 
 
@@ -212,8 +212,28 @@ public class TCPClient implements ActionListener {
                                         clientScore += 10;
                                     } 
 
-                                // Handle answer choices 
-                                } else if (receivedLine.startsWith("ANSWERS ")){
+                                
+                                } 
+
+                                //handles showing the winner
+                                else if (receivedLine.startsWith("WINNER ")) {
+                                    // Create a final copy of the message for the server
+                                    final String winnerMessage = receivedLine.substring(7);
+                                    SwingUtilities.invokeLater(() -> {
+                                        JOptionPane.showMessageDialog(window, 
+                                            "<html><div style='text-align: center; font-size: 14pt;'>" + 
+                                            winnerMessage + 
+                                            "</div></html>", 
+                                            "Game Over", 
+                                            JOptionPane.INFORMATION_MESSAGE);
+                                        window.dispose();
+                                        System.exit(0);
+                                    });
+                                }
+                                
+
+                                 // Handle answer choices
+                                else if (receivedLine.startsWith("ANSWERS ")){
                                     // Set incoming answers & display them on GUI
 
                                     // Set correct answer

@@ -276,20 +276,20 @@ public class TCPServer {
         // Check if there are no questions left
         if (questionNum >= questions.length) {
             // End the game
-            
+            printScoreboard();
             // Print game over message
             System.out.println("\nGAME OVER! (No more questions)"); 
             
-            // Convert the HashMap with scores to a list
-            List<Map.Entry<OutputStream, Integer>> entries = new ArrayList<>(allScores.entrySet());
+            // // Convert the HashMap with scores to a list
+            // List<Map.Entry<OutputStream, Integer>> entries = new ArrayList<>(allScores.entrySet());
 
-            // Sort the list in descending order by score
-            entries.sort((e1, e2) -> e2.getValue().compareTo(e1.getValue()));
+            // // Sort the list in descending order by score
+            // entries.sort((e1, e2) -> e2.getValue().compareTo(e1.getValue()));
 
-            // Print the sorted scores
-            for (Map.Entry<OutputStream, Integer> entry : entries) {
-                System.out.println("Score for " + entry.getKey() + " : " + entry.getValue());
-            }
+            // // Print the sorted scores
+            // for (Map.Entry<OutputStream, Integer> entry : entries) {
+            //     System.out.println("Score for " + entry.getKey() + " : " + entry.getValue());
+            // }
             
             return;
         }
@@ -436,52 +436,59 @@ public class TCPServer {
     }
 
     private void printScoreboard() {
-    System.out.println("\n=== GAME OVER ===");
-    System.out.println("Final Scores:");
-    System.out.println("--------------");
-
-    // Convert scores to a list of entries for sorting
-    List<Map.Entry<String, Integer>> sortedScores = new ArrayList<>();
+        System.out.println("\n=== GAME OVER ===");
+        System.out.println("Final Scores:");
+        System.out.println("--------------");
     
-    // Create username-score pairs
-    synchronized (this) {
-        for (Map.Entry<Socket, OutputStream> entry : socketOutputMap.entrySet()) {
-            String username = clientUsernames.getOrDefault(entry.getKey(), "Unknown");
-            Integer score = allScores.get(entry.getValue());
-            if (score != null) {
-                sortedScores.add(new AbstractMap.SimpleEntry<>(username, score));
+        // Get all active players with their usernames and scores
+        List<Map.Entry<String, Integer>> playerScores = new ArrayList<>();
+        
+        synchronized (this) {
+            for (Map.Entry<Socket, OutputStream> entry : socketOutputMap.entrySet()) {
+                String username = clientUsernames.get(entry.getKey());
+                Integer score = allScores.get(entry.getValue());
+                if (username != null && score != null) {
+                    playerScores.add(new AbstractMap.SimpleEntry<>(username, score));
+                }
             }
         }
+    
+        // Sort by score (highest first)
+        playerScores.sort((p1, p2) -> p2.getValue().compareTo(p1.getValue()));
+    
+        // Print the scoreboard
+        int rank = 1;
+        for (Map.Entry<String, Integer> player : playerScores) {
+            System.out.printf("%d. %-15s: %d points%n", 
+                             rank++, 
+                             player.getKey(), 
+                             player.getValue());
+        }
+    
+        // Declare winner if there are players
+        if (!playerScores.isEmpty()) {
+            Map.Entry<String, Integer> winner = playerScores.get(0);
+            System.out.println("\n🏆 WINNER 🏆");
+            System.out.println(winner.getKey() + " wins with " + winner.getValue() + " points!");
+            
+            // Send winner announcement to all clients
+            String winnerMessage = "WINNER " + winner.getKey() + " wins with " + winner.getValue() + " points!";
+            broadcastMessage(winnerMessage);
+        } else {
+            System.out.println("No players finished the game.");
+        }
     }
-
-    // Sort by score (descending)
-    sortedScores.sort((e1, e2) -> e2.getValue().compareTo(e1.getValue()));
-
-    // Print the scoreboard
-    for (int i = 0; i < sortedScores.size(); i++) {
-        Map.Entry<String, Integer> entry = sortedScores.get(i);
-        System.out.printf("%d. %-15s: %d points%n", i+1, entry.getKey(), entry.getValue());
-    }
-
-    // Declare the winner if there are players
-    if (!sortedScores.isEmpty()) {
-        Map.Entry<String, Integer> winner = sortedScores.get(0);
-        System.out.println("\n=== WINNER ===");
-        System.out.println(winner.getKey() + " wins with " + winner.getValue() + " points!");
-        
-        // Send winner announcement to all clients
-        String winnerMessage = "WINNER " + winner.getKey() + " wins with " + winner.getValue() + " points!";
+    
+    // Helper method to send messages to all clients
+    private void broadcastMessage(String message) {
         for (OutputStream out : clientOutputs) {
             try {
-                out.write((winnerMessage + "\n").getBytes("UTF-8"));
+                out.write((message + "\n").getBytes("UTF-8"));
             } catch (IOException e) {
-                e.printStackTrace();
+                System.out.println("Error broadcasting to client: " + e.getMessage());
             }
         }
-    } else {
-        System.out.println("No players participated in the game.");
     }
-}
     
     public static void main(String[] args) {
         TCPServer server = new TCPServer();
