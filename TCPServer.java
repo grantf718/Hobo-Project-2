@@ -94,8 +94,8 @@ public class TCPServer {
                 // Store output stream of client
                 clientOutputs.add(outStream); 
 
-                // new
                 socketOutputMap.put(socket, outStream);
+                allScores.put(outStream, 0);
 
                 System.out.println("Client " + socket.getInetAddress() + " has connected");
 
@@ -108,7 +108,7 @@ public class TCPServer {
                 }                
 
                 // Create a new threads
-                createReadThread();
+                createReadThread(socket, inStream, outStream);
                 // createWriteThread();
             }
         }
@@ -160,181 +160,103 @@ public class TCPServer {
     }
 
     // Creates and starts an anonymous thread that continuously monitors the input stream of an active socket connection.
-    public void createReadThread() {
+    private void createReadThread(Socket clientSocket, InputStream clientIn, OutputStream clientOut) {
+        new Thread(() -> {
+            String clientIP = clientSocket.getInetAddress().toString();
+            String clientUsername = "Unknown";
 
-        // Capture the current socket and stream in local variables to be used only by each client's unique thread
-        final Socket clientSocket = socket;
-        final InputStream clientInStream = inStream;
-        final OutputStream clientOutStream = outStream; // Capture the correct out stream
-
-        Thread readThread = new Thread() {
-            public void run() {
-
-                // Store client's IP and username for easy access 
-                final String clientIP = clientSocket.getInetAddress().toString();
-                String clientUsername = "Unknown user"; // Default to unknown so the code doesnt flip out!
-
-            	// Check socket connectivity before doing anything
-                while (socket.isConnected()) {
-                    try {
-
-                        byte[] readBuffer = new byte[200];
-                        // Read the data from client
-                        int num = clientInStream.read(readBuffer);
-                        // Check if inStream is not empty before doing anything
-                        if (num > 0) {
-                            byte[] arrayBytes = new byte[num];
-                            System.arraycopy(readBuffer, 0, arrayBytes, 0, num);
-                            String receivedMessage = new String(arrayBytes, "UTF-8");
-
-                            // Print out received message
-                            System.out.println("Incoming from " + clientUsername + " (" + clientIP + "): " + receivedMessage);
-                            
-                            // Handle client username
-                            if(receivedMessage.startsWith("USER ")){
-                                clientUsername = receivedMessage.substring(5); // Remove the USER tag
-                                System.out.println("Set username " + clientUsername + " for " + clientIP);
-                                allScores.put(clientOutStream, 0); // initialize everyone's scores as 0 when they join
-    
-                            // Handle client buzzing in
-                            } else if(receivedMessage.startsWith("buzz")){
-    
-                                // Check if the client has already buzzed
-                                if (buzzedClients.contains(clientIP)) {
-                                    System.out.println(clientUsername + " (" + clientIP + ") attempted to buzz again but was ignored.");
-                                    continue; // Ignore subsequent buzzes
-                                }
-                            
-                                // Add the client to the set
-                                buzzedClients.add(clientIP);                            
-
-                                // Determine if there was already a client that was first to buzz
-                                if(!firstClient){ // <-- This client was first to buzz in
-                                    // Set firstClient to TRUE
-                                    firstClient = !firstClient; 
-                                    // Send "ack" to client 
-                                    String response = "ack\n";
-                                    clientSocket.getOutputStream().write(response.getBytes("UTF-8"));
-                                    // Print
-                                    System.out.println(clientUsername + " (" + clientIP + ") was the first to buzz in! (Sent \"ack\")");
-                                } else { // <-- This client was not first to buzz in
-                                    // Send "negative-ack" to client
-                                    String response = "negative-ack\n";
-                                    clientSocket.getOutputStream().write(response.getBytes("UTF-8"));
-                                    // Print
-                                    System.out.println("Client " + clientSocket.getInetAddress() + " buzzed in too late. (Sent \"negative-ack\")");
-
-                                }
-
-                            // Handle answer coming in
-                            } else if(receivedMessage.startsWith("ANSWER ")){
-
-                                // DEBUG
-                                System.out.println("Correct answer: " + correctAnswer);
-                                String receivedAnswer = receivedMessage.substring(7);
-                                System.out.println("Received answer: " + receivedAnswer);
-
-                                // Determine if the client's answer is correct
-                                if(receivedAnswer.equals(correctAnswer)){
-                                    
-                                    // If correct
-                                    System.out.println(receivedAnswer + " is correct!");
-
-                                    // Updates list of client scores
-                                    int currentScore = allScores.get(clientOutStream) + 10; 
-                                    allScores.put(clientOutStream, currentScore);
-
-                                    // Notify client of score increase
-                                    String questionRight = "SCORE +" + 10 + " points\n";
-                                    clientSocket.getOutputStream().write((questionRight).getBytes("UTF-8"));
-
-                                } else {
-                                    
-                                    // If incorrect
-                                    System.out.println(receivedMessage + " is incorrect.");
-
-                                    // Update list of client scores
-                                    int currentScore = allScores.get(clientOutStream) - 10; 
-                                    allScores.put(clientOutStream, currentScore);
-
-                                    // Notify client of score decrease
-                                    String questionWrong = "SCORE -" + 10 + " points\n";
-                                    clientSocket.getOutputStream().write((questionWrong).getBytes("UTF-8"));
-                                }
-
-                            // Handle next question signal
-                            } else if(receivedMessage.startsWith("NEXT")){
-                                // System.out.println("Received NEXT, calling nextQuestion");
-                                // nextQuestion();
-
-                                // new
-                                synchronized (targetLock) {
-                                    if (clientSocket.equals(targetClientSocket)) {
-                                        System.out.println("Target client requested NEXT. Proceeding.");
-                                        nextQuestion();
-                                    } else {
-                                        System.out.println("Non-target client attempted NEXT. Ignored.");
-                                    }
-                                }
-                            
-
-                            // Handle score update (when client who polled doesn't submit an answer)
-                            } else if(receivedMessage.startsWith("SCORE ")){
-                                
-                                System.out.println("Received NO answer from user, adjusting score, calling nextQuestion");
-                                int currentScore = allScores.get(clientOutStream) - 20;
-                                allScores.put(clientOutStream, currentScore);
-                            }
-                        } 
-                    } catch (EOFException | SocketException se) {
+            byte[] buffer = new byte[512];
+            try {
+                while (true) {
+                    int len = clientIn.read(buffer);
+                    if (len == -1) {
+                        // clean disconnect
                         System.out.println("Client " + clientIP + " disconnected.");
+                        break;
+                    }
+                    String msg = new String(buffer, 0, len, "UTF-8").trim();
+                    System.out.println("From " + clientIP + ": " + msg);
 
-                        // new
-                        clientOutputs.remove(clientOutStream);
-                        socketOutputMap.remove(clientSocket);
-                        allScores.remove(clientOutStream);                        
+                    // --- handle USER ---
+                    if (msg.startsWith("USER ")) {
+                        clientUsername = msg.substring(5);
+                        System.out.println("Set username " + clientUsername + " for " + clientIP);
 
-                        // new
+                    // --- handle buzz ---
+                    } else if (msg.equals("buzz")) {
+                        if (buzzedClients.contains(clientIP)) continue;
+                        buzzedClients.add(clientIP);
+                        if (!firstClient) {
+                            firstClient = true;
+                            clientOut.write("ack\n".getBytes("UTF-8"));
+                            System.out.println(clientUsername + " was first to buzz.");
+                        } else {
+                            clientOut.write("negative-ack\n".getBytes("UTF-8"));
+                            System.out.println(clientUsername + " buzzed too late.");
+                        }
+
+                    // --- handle ANSWER ---
+                    } else if (msg.startsWith("ANSWER ")) {
+                        String answer = msg.substring(7);
+                        if (answer.equals(correctAnswer)) {
+                            int score = allScores.get(clientOut) + 10;
+                            allScores.put(clientOut, score);
+                            clientOut.write(("SCORE +10 points\n").getBytes("UTF-8"));
+                        } else {
+                            int score = allScores.get(clientOut) - 10;
+                            allScores.put(clientOut, score);
+                            clientOut.write(("SCORE -10 points\n").getBytes("UTF-8"));
+                        }
+
+                    // --- handle NEXT ---
+                    } else if (msg.equals("NEXT")) {
                         synchronized (targetLock) {
                             if (clientSocket.equals(targetClientSocket)) {
-                                System.out.println("Target client disconnected. Reassigning...");
-                                targetClientSocket = null;
-                            
-                                for (Socket s : socketOutputMap.keySet()) {
-                                    if (!s.isClosed()) {
-                                        targetClientSocket = s;
-                                        System.out.println("New target client assigned: " + s.getInetAddress());
-                                        break;
-                                    }
-                                }
-                            
-                                if (targetClientSocket == null) {
-                                    System.out.println("No clients left to assign.");
-                                }
+                                System.out.println("Target client requested NEXT.");
+                                nextQuestion();
                             }
                         }
-                        
 
-                        try {
-                            inStream.close();
-                            socket.close(); // Close the socket too
-                        } catch (IOException e) {
-                            e.printStackTrace();
+                    // --- handle SCORE ---
+                    } else if (msg.startsWith("SCORE -20")) {
+                        int score = allScores.get(clientOut) - 20;
+                        allScores.put(clientOut, score);
+                    }
+                }
+            } catch (SocketException se) {
+                System.out.println("Connection reset by " + clientIP);
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
+            } finally {
+                // --- CLEANUP ---
+                try {
+                    clientIn.close();
+                    clientOut.close();
+                    clientSocket.close();
+                } catch (IOException ignored) {}
+
+                clientOutputs.remove(clientOut);
+                socketOutputMap.remove(clientSocket);
+                allScores.remove(clientOut);
+
+                synchronized (targetLock) {
+                    if (clientSocket.equals(targetClientSocket)) {
+                        targetClientSocket = null;
+                        // pick a new one if any left
+                        for (Socket s : socketOutputMap.keySet()) {
+                            if (!s.isClosed()) {
+                                targetClientSocket = s;
+                                System.out.println("New target: " + s.getInetAddress());
+                                break;
+                            }
                         }
-                        break; // Exit the thread loop
-                    } catch (UnsupportedEncodingException e) {
-                        e.printStackTrace();
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                        if (targetClientSocket == null)
+                            System.out.println("No clients left to assign target.");
                     }
                 }
             }
-        };
-    
-        readThread.setPriority(Thread.MAX_PRIORITY);
-        readThread.start();
+        }, "ClientReader-" + clientSocket.getInetAddress()).start();
     }
-
     // Moves to the next question
     public void nextQuestion(){
         
