@@ -165,6 +165,7 @@ public class TCPServer {
         // Capture the current socket and stream in local variables to be used only by each client's unique thread
         final Socket clientSocket = socket;
         final InputStream clientInStream = inStream;
+        final OutputStream clientOutStream = outStream; // Capture the correct out stream
 
         Thread readThread = new Thread() {
             public void run() {
@@ -193,7 +194,7 @@ public class TCPServer {
                             if(receivedMessage.startsWith("USER ")){
                                 clientUsername = receivedMessage.substring(5); // Remove the USER tag
                                 System.out.println("Set username " + clientUsername + " for " + clientIP);
-                                allScores.put(outStream, 0); // initialize everyone's scores as 0 when they join
+                                allScores.put(clientOutStream, 0); // initialize everyone's scores as 0 when they join
     
                             // Handle client buzzing in
                             } else if(receivedMessage.startsWith("buzz")){
@@ -240,8 +241,8 @@ public class TCPServer {
                                     System.out.println(receivedAnswer + " is correct!");
 
                                     // Updates list of client scores
-                                    int currentScore = allScores.get(outStream) + 10; 
-                                    allScores.put(outStream, currentScore);
+                                    int currentScore = allScores.get(clientOutStream) + 10; 
+                                    allScores.put(clientOutStream, currentScore);
 
                                     // Notify client of score increase
                                     String questionRight = "SCORE +" + 10 + " points\n";
@@ -253,8 +254,8 @@ public class TCPServer {
                                     System.out.println(receivedMessage + " is incorrect.");
 
                                     // Update list of client scores
-                                    int currentScore = allScores.get(outStream) - 10; 
-                                    allScores.put(outStream, currentScore);
+                                    int currentScore = allScores.get(clientOutStream) - 10; 
+                                    allScores.put(clientOutStream, currentScore);
 
                                     // Notify client of score decrease
                                     String questionWrong = "SCORE -" + 10 + " points\n";
@@ -281,17 +282,17 @@ public class TCPServer {
                             } else if(receivedMessage.startsWith("SCORE ")){
                                 
                                 System.out.println("Received NO answer from user, adjusting score, calling nextQuestion");
-                                int currentScore = allScores.get(outStream) - 20;
-                                allScores.put(outStream, currentScore);
+                                int currentScore = allScores.get(clientOutStream) - 20;
+                                allScores.put(clientOutStream, currentScore);
                             }
                         } 
                     } catch (EOFException | SocketException se) {
                         System.out.println("Client " + clientIP + " disconnected.");
 
                         // new
-                        clientOutputs.remove(outStream);
+                        clientOutputs.remove(clientOutStream);
                         socketOutputMap.remove(clientSocket);
-                        allScores.remove(outStream);                        
+                        allScores.remove(clientOutStream);                        
 
                         // new
                         synchronized (targetLock) {
