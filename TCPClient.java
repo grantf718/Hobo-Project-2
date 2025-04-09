@@ -1,3 +1,4 @@
+import java.awt.Color;
 import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
@@ -12,8 +13,13 @@ import java.util.TimerTask;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.ButtonGroup;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JRadioButton;
+import javax.swing.SwingUtilities;
 
 public class TCPClient implements ActionListener {
 
@@ -32,14 +38,9 @@ public class TCPClient implements ActionListener {
     private Timer t;
 	private JLabel scoreLabel;
     private JLabel totalScore;
-    
-    //current player
-    private JLabel currentPlayerLabel;
-
     private int clientScore = 0;
 	private TimerTask clock;
 	private JFrame window;
-    
 
     private String currentQuestion;
     private String[] answerChoices = new String[4];
@@ -49,23 +50,18 @@ public class TCPClient implements ActionListener {
     private boolean submitted = false;
     private boolean polled = false;
 
-     // GUI components for displaying the current answering user
-    private JFrame frame;
-    private JPanel panel;
-    private JLabel currentUserLabel;
-
     // ---------------------------------------- // 
     //            Destination Socket:           //
     // ---------------------------------------- // 
         
-    // Destination port: (must match server)
+        // Destination port: (must match server)
         private final int DEST_PORT = 1234;
 
-    // Destination IP: (must match server)
-    // private final String DEST_IP = "localhost"; // <-- localhost (for testing purposes)
-    //private final String DEST_IP = "10.111.134.82"; // <-- Grant's IP
-    private final String DEST_IP = ""; // <-- Evan's IP
-    // private final String DEST_IP = ""; // <-- Jessica's IP
+        // Destination IP: (must match server)
+        // private final String DEST_IP = "localhost"; // <-- localhost (for testing purposes)
+        // private final String DEST_IP = "10.111.134.82"; // <-- Grant's IP
+        private final String DEST_IP = ""; // <-- Evan's IP
+        // private final String DEST_IP = ""; // <-- Jessica's IP
 
     // ---------------------------------------- // 
 
@@ -104,11 +100,6 @@ public class TCPClient implements ActionListener {
         poll.setEnabled(false);
         submit.setEnabled(false);
 
- // GUI Setup    
-
-    currentUserLabel = new JLabel(""); // Start with blank
-	window.add(currentUserLabel);
-	currentUserLabel.setBounds(10, 5, 350, 50);;
     }
 
     // Create client socket
@@ -157,7 +148,6 @@ public class TCPClient implements ActionListener {
 
                             // Go line by line to separate message
                             while ((receivedLine = reader.readLine()) != null) {
-                                
 
                                 System.out.println("Incoming line: " + receivedLine);
 
@@ -169,18 +159,10 @@ public class TCPClient implements ActionListener {
                                     // Option buttons should become enabled when second phase starts
 
                                 // Handle incorrect answer
-                                } 
-
-                                else if (receivedLine.startsWith("END")) {
-                                    JOptionPane.showMessageDialog(null, "The game has been ended by the host.", "Game Over", JOptionPane.INFORMATION_MESSAGE);
-                                    System.exit(0); // Close client
-                                }
-                                                         
-                                else if (receivedLine.startsWith("negative-ack")){ 
+                                } else if (receivedLine.startsWith("negative-ack")){ 
                                     System.out.println("You were not the first to buzz in.");
                                     // Ack remains false
                                     ack = false;
-                                    updateCurrentUserLabel(clientUsername);
                                     // Option buttons should stay disabled when second phase starts
 
                                 // Handle question
@@ -280,11 +262,6 @@ public class TCPClient implements ActionListener {
                                         window.repaint();
                                     });                                    
                                 }
-                                else if (receivedLine.startsWith("CURRENT_PLAYER")) {
-                                    String playerName = receivedLine.substring("CURRENT_PLAYER".length()).trim();
-                                    updateCurrentUserLabel(playerName); 
-                                }
-                                
                             }
                         // }
                         // else {
@@ -337,11 +314,6 @@ public class TCPClient implements ActionListener {
         totalScore.setBounds(50, 250, 100, 20);
         window.add(totalScore);
 
-        //current user
-        currentPlayerLabel = new JLabel("Waiting for a player to buzz in...");
-        currentPlayerLabel.setBounds(10, 270, 300, 20);
-        window.add(currentPlayerLabel);
-
         // Poll
 		poll = new JButton("Poll"); 
 		poll.setBounds(10, 300, 100, 20);
@@ -367,6 +339,7 @@ public class TCPClient implements ActionListener {
 		window.setVisible(true);
 		window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		window.setResizable(false);
+
     }
 
     // Getter for ack
@@ -452,19 +425,6 @@ public class TCPClient implements ActionListener {
 		}
 	}
 
-    public void updateCurrentUserLabel(String username) {
-        SwingUtilities.invokeLater(() -> {
-            if (username == null || username.isEmpty()) {
-                currentUserLabel.setText("Waiting for a player to buzz in...");
-                currentUserLabel.setForeground(Color.BLACK);
-                currentUserLabel.setBackground(window.getBackground()); // match the panel bg to hide highlight
-            } else {
-                currentUserLabel.setText("Buzzed in First: " + username);
-                currentUserLabel.setForeground(new Color(139, 0, 139)); // dark pink 
-            }
-        });
-    }
-
 
     // Runs the timer 
 	public class TimerCode extends TimerTask {
@@ -482,7 +442,7 @@ public class TCPClient implements ActionListener {
 
 		@Override
 		public void run() {
-        
+
 			// First Phase (Polling Phase)
 			if(duration > 0 && !secondPhase) {
 				// Disable options
@@ -543,34 +503,27 @@ public class TCPClient implements ActionListener {
                     e.printStackTrace();
                 }
 
-                // Clear current answering user before next round
-                SwingUtilities.invokeLater(() -> {
-                    currentUserLabel.setText("");
-                });
-
-
 				// Reset to the first phase for the next question
 				duration = 15; 
 				secondPhase = false;
 
                 // Reset ack
                 setAck(false);
-                
 
                 // Clear selections from any buttons
                 optionGroup.clearSelection();
     
 
-                // // Let server know to move onto next question
-                // try {
-                //     String nextQuestion = "NEXT";
-                //     outStream.write(nextQuestion.getBytes("UTF-8"));
-                //     System.out.println("Sent \"" + nextQuestion + "\" to server");
-                // } catch (UnsupportedEncodingException e) {
-                //     e.printStackTrace();
-                // } catch (IOException e) {
-                //     e.printStackTrace();
-                // }
+                // Let server know to move onto next question
+                try {
+                    String nextQuestion = "NEXT";
+                    outStream.write(nextQuestion.getBytes("UTF-8"));
+                    System.out.println("Sent \"" + nextQuestion + "\" to server");
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
 
 			}
 

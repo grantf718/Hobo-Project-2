@@ -1,3 +1,4 @@
+
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -25,9 +26,6 @@ public class TCPServer {
 
     private HashMap<OutputStream, Integer> allScores = new HashMap<>();
 
-    private Map<OutputStream, String> clientNames = new HashMap<>();
-
-
     // Boolean to represent if a client has buzzed in. Set to TRUE once any client buzzes in before the rest. 
     // Used to send "ack" vs "negative-ack". Will reset upon new question
     private boolean firstClient = false; 
@@ -35,10 +33,6 @@ public class TCPServer {
     // Set to represent all clients that have buzzed in for the current question. Gets cleared for next question
     private Set<String> buzzedClients = new HashSet<>();
 
-    // // GUI components for displaying the current answering user
-    // private JFrame frame;
-    // private JPanel panel;
-    // private JLabel currentUserLabel;
 
     // ---------------------------------------- // 
     //              Server Port:                //
@@ -78,6 +72,7 @@ public class TCPServer {
         catch (IOException e) {
 			e.printStackTrace();
 		}
+
     }
 
     // Accept client connections
@@ -126,16 +121,6 @@ public class TCPServer {
                                 outStream.write(typedMessage.getBytes("UTF-8"));
                             }
                         }
-
-                        // Add inside terminalThread.run()
-                        if (typedMessage.equals("end")) {
-                            System.out.println("Ending game for all clients...");
-                            for (OutputStream out : clientOutputs) {
-                                out.write("END\n".getBytes("UTF-8"));
-                            }
-                            System.exit(0); // optional: shut down server after notifying clients
-                        }
-
     
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -181,7 +166,7 @@ public class TCPServer {
                                 clientUsername = receivedMessage.substring(5); // Remove the USER tag
                                 System.out.println("Set username " + clientUsername + " for " + clientIP);
                                 allScores.put(outStream, 0); // initialize everyone's scores as 0 when they join
-                                clientNames.put(outStream, clientUsername); 
+    
                             // Handle client buzzing in
                             } else if(receivedMessage.startsWith("buzz")){
     
@@ -203,16 +188,6 @@ public class TCPServer {
                                     clientSocket.getOutputStream().write(response.getBytes("UTF-8"));
                                     // Print
                                     System.out.println(clientUsername + " (" + clientIP + ") was the first to buzz in! (Sent \"ack\")");
-                                    // Notify all clients who the current player is
-                                    String currentPlayerMessage = "CURRENT_PLAYER " + clientUsername + "\n";
-                                    for (OutputStream out : clientOutputs) {
-                                        out.write(currentPlayerMessage.getBytes("UTF-8"));
-                                    }
-
-                                    for (OutputStream out : clientOutputs) {
-                                        out.write(currentPlayerMessage.getBytes("UTF-8"));
-                                    }
-
                                 } else { // <-- This client was not first to buzz in
                                     // Send "negative-ack" to client
                                     String response = "negative-ack\n";
@@ -235,8 +210,6 @@ public class TCPServer {
                                     
                                     // If correct
                                     System.out.println(receivedAnswer + " is correct!");
-                                    // updateCurrentUserLabel(clientUsername);
-
 
                                     // Updates list of client scores
                                     int currentScore = allScores.get(outStream) + 10; 
@@ -245,7 +218,6 @@ public class TCPServer {
                                     // Notify client of score increase
                                     String questionRight = "SCORE +" + 10 + " points\n";
                                     clientSocket.getOutputStream().write((questionRight).getBytes("UTF-8"));
-                                    delayAndNextQuestion();
 
                                 } else {
                                     
@@ -259,7 +231,6 @@ public class TCPServer {
                                     // Notify client of score decrease
                                     String questionWrong = "SCORE -" + 10 + " points\n";
                                     clientSocket.getOutputStream().write((questionWrong).getBytes("UTF-8"));
-                                    delayAndNextQuestion();
                                 }
 
                             // Handle next question signal
@@ -273,7 +244,6 @@ public class TCPServer {
                                 System.out.println("Received NO answer from user, adjusting score, calling nextQuestion");
                                 int currentScore = allScores.get(outStream) - 20;
                                 allScores.put(outStream, currentScore);
-                                delayAndNextQuestion();
                             }
                         } 
                     } catch (EOFException | SocketException se) {
@@ -299,18 +269,6 @@ public class TCPServer {
         readThread.start();
     }
 
-    // Adds a delay before moving to the next question
-    public void delayAndNextQuestion() {
-        new Thread(() -> {
-            try {
-                Thread.sleep(3000); // wait 3 seconds before next question
-                nextQuestion();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }).start();
-    }
-
     // Moves to the next question
     public void nextQuestion(){
         
@@ -320,7 +278,6 @@ public class TCPServer {
 
             // Print game over message
             System.out.println("\nGAME OVER! (No more questions)"); 
-
             
             // Convert the HashMap with scores to a list
             List<Map.Entry<OutputStream, Integer>> entries = new ArrayList<>(allScores.entrySet());
@@ -328,18 +285,11 @@ public class TCPServer {
             // Sort the list in descending order by score
             entries.sort((e1, e2) -> e2.getValue().compareTo(e1.getValue()));
 
-            if (!entries.isEmpty()) {
-                String winner = clientNames.getOrDefault(entries.get(0).getKey(), "Unknown");
-                int score = entries.get(0).getValue();
-                System.out.println("Winner: " + winner + " with " + score + " points!\n");
-            }        
-
             // Print the sorted scores
-            System.out.println("\nFinal Scores:");
             for (Map.Entry<OutputStream, Integer> entry : entries) {
-                String name = clientNames.getOrDefault(entry.getKey(), "Unknown");
-                System.out.println(name + " : " + entry.getValue() + " points");
+                System.out.println("Score for " + entry.getKey() + " : " + entry.getValue());
             }
+            
             return;
         }
 
@@ -354,7 +304,7 @@ public class TCPServer {
 
         // Clear the set of buzzed in clients
         buzzedClients.clear();
- 
+
         // Get new Q&A from array, tag both strings 
         String question = "QUESTION Q" + questionNum + ". " + questions[questionNum-1]; 
         String currentAnswers = "ANSWERS " + answers[questionNum-1];
@@ -375,9 +325,8 @@ public class TCPServer {
         // Reset firstClient to false 
         firstClient = false;
         
-        
     }
-    
+
     // Function to read in a text file containing 20 questions or answers separated by line
     public static String[] readFile(String filePath){
         String[] lines = new String[20];
