@@ -157,12 +157,21 @@ public class TCPClient implements ActionListener {
                                     // Option buttons should become enabled when second phase starts
 
                                 // Handle incorrect answer
-                                } else if (receivedLine.startsWith("negative-ack")){ 
+                                                                  }
+
+                                else if (receivedLine.startsWith("END")) {
+                                    JOptionPane.showMessageDialog(null, "The game has been ended by the host.", "Game Over", JOptionPane.INFORMATION_MESSAGE);
+                                    System.exit(0); // Close client
+                                }
+                                                         
+                                else if (receivedLine.startsWith("negative-ack")){ 
                                     System.out.println("You were not the first to buzz in.");
                                     // Ack remains false
                                     ack = false;
-                                    // Option buttons should stay disabled when second phase starts
+                                    // Option buttons should stay disabled when second phase start
 
+ 
+                                    
                                 // Handle question
                                 } else if(receivedLine.startsWith("QUESTION ")){
                                     // Set incoming question & display it on GUI 
