@@ -58,7 +58,7 @@ public class TCPClient implements ActionListener {
         private final int DEST_PORT = 1234;
 
         // Destination IP: (must match server)
-        private final String DEST_IP = "10.111.134.82"; // <-- Grant's IP
+        private final String DEST_IP = ""; // <-- Grant's IP 10.111.134.82
 
     // ---------------------------------------- // 
 
@@ -202,6 +202,7 @@ public class TCPClient implements ActionListener {
                                         window.repaint();
                                     });
 
+
                                 // Handle score
                                 } else if(receivedLine.startsWith("SCORE ")){
                                     // Set the displayed score to the appropriate score
@@ -268,6 +269,10 @@ public class TCPClient implements ActionListener {
                                         }
                                         window.repaint();
                                     });                                    
+                                }
+                                else if (receivedLine.startsWith("TERMINATE")) {
+                                    JOptionPane.showMessageDialog(null, "You have been terminated by the host.", "Terminated", JOptionPane.ERROR_MESSAGE);
+                                    System.exit(0);
                                 }
                             }
                         // }

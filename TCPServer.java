@@ -2,6 +2,7 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -16,6 +17,10 @@ public class TCPServer {
     private InputStream inStream = null;
     private OutputStream outStream = null;
     private List<OutputStream> clientOutputs = new ArrayList<>(); // List of client output streams 
+
+
+    //adding the usernmae map at class level(with other declarations)
+    private final Map<Socket, String> clientUsernames = new HashMap<>();
 
     // Arrays to store questions and answers from file
     private String[] questions;
@@ -147,6 +152,11 @@ public class TCPServer {
                             }
                             System.exit(0); // optional: shut down server after notifying clients
                             }
+
+                        if (typedMessage.startsWith("terminate ")) {
+                                String usernameToTerminate = typedMessage.substring(10).trim();
+                                terminateClientByUsername(usernameToTerminate);
+                            }
     
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -180,6 +190,7 @@ public class TCPServer {
                     // --- handle USER ---
                     if (msg.startsWith("USER ")) {
                         clientUsername = msg.substring(5);
+                        clientUsernames.put(clientSocket, clientUsername); //new
                         System.out.println("Set username " + clientUsername + " for " + clientIP);
 
                     // --- handle buzz ---
@@ -257,13 +268,15 @@ public class TCPServer {
             }
         }, "ClientReader-" + clientSocket.getInetAddress()).start();
     }
+
+
     // Moves to the next question
     public void nextQuestion(){
         
         // Check if there are no questions left
         if (questionNum >= questions.length) {
             // End the game
-
+            
             // Print game over message
             System.out.println("\nGAME OVER! (No more questions)"); 
             
@@ -340,6 +353,135 @@ public class TCPServer {
         }
 
     }
+
+    private synchronized void terminateClientByUsername(String username) {
+        List<Socket> toRemove = new ArrayList<>();
+        
+        synchronized (clientUsernames) {
+            for (Map.Entry<Socket, String> entry : clientUsernames.entrySet()) {
+                if (entry.getValue().equalsIgnoreCase(username)) {
+                    toRemove.add(entry.getKey());
+                }
+            }
+        }
+        
+        if (toRemove.isEmpty()) {
+            System.out.println("No clients found with username: " + username);
+        } else {
+            for (Socket s : toRemove) {
+                terminateClient(s);
+            }
+        }
+    }
+    
+    private synchronized void reassignTargetClient() {
+        synchronized (targetLock) {
+            targetClientSocket = null;
+            // Find the first active client to reassign
+            for (Socket s : socketOutputMap.keySet()) {
+                if (!s.isClosed()) {
+                    targetClientSocket = s;
+                    System.out.println("New target client assigned: " + 
+                        clientUsernames.getOrDefault(s, "Unknown") + 
+                        " (" + s.getInetAddress() + ")");
+                    break;
+                }
+            }
+            if (targetClientSocket == null) {
+                System.out.println("No clients left to assign as target");
+            }
+        }
+    }
+
+    private synchronized void terminateClient(Socket clientSocket) {
+        try {
+            OutputStream out = socketOutputMap.get(clientSocket);
+            if (out != null) {
+                try {
+                    out.write("TERMINATE\n".getBytes("UTF-8"));
+                    out.flush();
+                    Thread.sleep(100);
+                } catch (Exception e) {
+                    System.out.println("Error sending terminate command: " + e.getMessage());
+                }
+    
+                // Clean up all references
+                synchronized (this) {
+                    clientOutputs.remove(out);
+                    socketOutputMap.remove(clientSocket);
+                    allScores.remove(out);
+                    clientUsernames.remove(clientSocket);
+                    
+                   // Handle target client reassignment
+                    synchronized (targetLock) {
+                        if (clientSocket.equals(targetClientSocket)) {
+                            reassignTargetClient();  // Use the new method here
+                        }
+                    }
+                }
+    
+                try {
+                    if (!clientSocket.isClosed()) {
+                        clientSocket.close();
+                    }
+                    System.out.println("Terminated client: " + 
+                        clientUsernames.get(clientSocket) + " (" + clientSocket.getInetAddress() + ")");
+                } catch (IOException e) {
+                    System.out.println("Error closing socket: " + e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Error in terminateClient: " + e.getMessage());
+        }
+    }
+
+    private void printScoreboard() {
+    System.out.println("\n=== GAME OVER ===");
+    System.out.println("Final Scores:");
+    System.out.println("--------------");
+
+    // Convert scores to a list of entries for sorting
+    List<Map.Entry<String, Integer>> sortedScores = new ArrayList<>();
+    
+    // Create username-score pairs
+    synchronized (this) {
+        for (Map.Entry<Socket, OutputStream> entry : socketOutputMap.entrySet()) {
+            String username = clientUsernames.getOrDefault(entry.getKey(), "Unknown");
+            Integer score = allScores.get(entry.getValue());
+            if (score != null) {
+                sortedScores.add(new AbstractMap.SimpleEntry<>(username, score));
+            }
+        }
+    }
+
+    // Sort by score (descending)
+    sortedScores.sort((e1, e2) -> e2.getValue().compareTo(e1.getValue()));
+
+    // Print the scoreboard
+    for (int i = 0; i < sortedScores.size(); i++) {
+        Map.Entry<String, Integer> entry = sortedScores.get(i);
+        System.out.printf("%d. %-15s: %d points%n", i+1, entry.getKey(), entry.getValue());
+    }
+
+    // Declare the winner if there are players
+    if (!sortedScores.isEmpty()) {
+        Map.Entry<String, Integer> winner = sortedScores.get(0);
+        System.out.println("\n=== WINNER ===");
+        System.out.println(winner.getKey() + " wins with " + winner.getValue() + " points!");
+        
+        // Send winner announcement to all clients
+        String winnerMessage = "WINNER " + winner.getKey() + " wins with " + winner.getValue() + " points!";
+        for (OutputStream out : clientOutputs) {
+            try {
+                out.write((winnerMessage + "\n").getBytes("UTF-8"));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    } else {
+        System.out.println("No players participated in the game.");
+    }
+}
     
     public static void main(String[] args) {
         TCPServer server = new TCPServer();
