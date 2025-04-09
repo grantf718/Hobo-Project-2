@@ -245,6 +245,7 @@ public class TCPServer {
                                     // Notify client of score increase
                                     String questionRight = "SCORE +" + 10 + " points\n";
                                     clientSocket.getOutputStream().write((questionRight).getBytes("UTF-8"));
+                                    delayAndNextQuestion();
 
                                 } else {
                                     
@@ -258,6 +259,7 @@ public class TCPServer {
                                     // Notify client of score decrease
                                     String questionWrong = "SCORE -" + 10 + " points\n";
                                     clientSocket.getOutputStream().write((questionWrong).getBytes("UTF-8"));
+                                    delayAndNextQuestion();
                                 }
 
                             // Handle next question signal
@@ -271,6 +273,7 @@ public class TCPServer {
                                 System.out.println("Received NO answer from user, adjusting score, calling nextQuestion");
                                 int currentScore = allScores.get(outStream) - 20;
                                 allScores.put(outStream, currentScore);
+                                delayAndNextQuestion();
                             }
                         } 
                     } catch (EOFException | SocketException se) {
@@ -296,6 +299,18 @@ public class TCPServer {
         readThread.start();
     }
 
+    // Adds a delay before moving to the next question
+    public void delayAndNextQuestion() {
+        new Thread(() -> {
+            try {
+                Thread.sleep(3000); // wait 3 seconds before next question
+                nextQuestion();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
     // Moves to the next question
     public void nextQuestion(){
         
@@ -305,6 +320,7 @@ public class TCPServer {
 
             // Print game over message
             System.out.println("\nGAME OVER! (No more questions)"); 
+
             
             // Convert the HashMap with scores to a list
             List<Map.Entry<OutputStream, Integer>> entries = new ArrayList<>(allScores.entrySet());

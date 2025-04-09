@@ -63,8 +63,8 @@ public class TCPClient implements ActionListener {
 
     // Destination IP: (must match server)
     // private final String DEST_IP = "localhost"; // <-- localhost (for testing purposes)
-    // private final String DEST_IP = "10.111.134.82"; // <-- Grant's IP
-        private final String DEST_IP = ""; // <-- Evan's IP
+    //private final String DEST_IP = "10.111.134.82"; // <-- Grant's IP
+    private final String DEST_IP = ""; // <-- Evan's IP
     // private final String DEST_IP = ""; // <-- Jessica's IP
 
     // ---------------------------------------- // 
@@ -561,16 +561,16 @@ public class TCPClient implements ActionListener {
                 optionGroup.clearSelection();
     
 
-                // Let server know to move onto next question
-                try {
-                    String nextQuestion = "NEXT";
-                    outStream.write(nextQuestion.getBytes("UTF-8"));
-                    System.out.println("Sent \"" + nextQuestion + "\" to server");
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                // // Let server know to move onto next question
+                // try {
+                //     String nextQuestion = "NEXT";
+                //     outStream.write(nextQuestion.getBytes("UTF-8"));
+                //     System.out.println("Sent \"" + nextQuestion + "\" to server");
+                // } catch (UnsupportedEncodingException e) {
+                //     e.printStackTrace();
+                // } catch (IOException e) {
+                //     e.printStackTrace();
+                // }
 
 			}
 
