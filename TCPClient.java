@@ -48,7 +48,7 @@ public class TCPClient implements ActionListener {
     private String correctAnswer;
     private boolean ack = false;
     private boolean submitted = false;
-    private boolean polled = false;
+    private boolean ACKpolled = false;
 
     // ---------------------------------------- // 
     //            Destination Socket:           //
@@ -156,6 +156,7 @@ public class TCPClient implements ActionListener {
                                     System.out.println("You were the first to buzz in!");
                                     // Set ack to true for this client
                                     ack = true;
+                                    ACKpolled = true;
                                     // Option buttons should become enabled when second phase starts
 
                                 // Handle incorrect answer
@@ -171,7 +172,7 @@ public class TCPClient implements ActionListener {
 
                                     // Reset tracker of whether client sumitted for next question
                                     submitted = false;
-                                    polled = false;
+                                    ACKpolled = false;
 
                                     // Cancel any existing timer and timer task
                                     if(t != null) {
@@ -390,10 +391,7 @@ public class TCPClient implements ActionListener {
                 // Enable submit button
                 submit.setEnabled(true);
                 break;
-			case "Poll":	
-            
-                polled = true;
-            
+			case "Poll":	            
                 // Send poll message 'buzz' to server
                 try {
                     String buzz = "buzz";
@@ -479,7 +477,7 @@ public class TCPClient implements ActionListener {
             // Move on to next question
 			} else if(duration <= 0 && secondPhase) {
                 // Check if client polled but didn't submit an answer
-                if(!submitted && polled){
+                if(!submitted && ACKpolled){
                     // Deduct 20 point 
                     clientScore -= 20;
                     // Send score update msg to server
